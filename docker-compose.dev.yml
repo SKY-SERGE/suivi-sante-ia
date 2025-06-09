@@ -1,0 +1,106 @@
+# ==============================================================================
+# DOCKER COMPOSE POUR DÉVELOPPEMENT - SUIVI SANTÉ IA
+# ==============================================================================
+# Configuration optimisée pour le développement avec hot-reload
+# ==============================================================================
+
+version: "3.8"
+
+services:
+  # ==============================================================================
+  # APPLICATION NUXT 3 - MODE DÉVELOPPEMENT
+  # ==============================================================================  nuxt-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    container_name: suivi-sante-nuxt-dev
+    ports:
+      - "3000:3000"
+      - "24678:24678" # Port pour Hot Module Replacement
+    environment:
+      - NODE_ENV=development
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
+      - NUXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NUXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    env_file:
+      - .env
+    volumes:
+      # Montage du code source pour le hot-reload
+      - ./nuxt-app:/app
+      - /app/node_modules
+      - /app/.nuxt
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - suivi-sante-dev
+    depends_on:
+      - redis-dev
+
+  # ==============================================================================
+  # REDIS POUR DÉVELOPPEMENT
+  # ==============================================================================
+  redis-dev:
+    image: redis:7-alpine
+    container_name: suivi-sante-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-dev-data:/data
+    restart: unless-stopped
+    networks:
+      - suivi-sante-dev
+
+  # ==============================================================================
+  # POSTGRESQL POUR DÉVELOPPEMENT
+  # ==============================================================================
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: suivi-sante-postgres-dev
+    environment:
+      - POSTGRES_DB=suivi_sante_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=devpassword
+    ports:
+      - "5433:5432" # Port différent pour éviter les conflicts
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/test_data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+    restart: unless-stopped
+    networks:
+      - suivi-sante-dev
+
+  # ==============================================================================
+  # MAILHOG POUR TESTS D'EMAILS (DÉVELOPPEMENT)
+  # ==============================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: suivi-sante-mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Interface Web
+    networks:
+      - suivi-sante-dev
+
+# ==============================================================================
+# RÉSEAUX DÉVELOPPEMENT
+# ==============================================================================
+networks:
+  suivi-sante-dev:
+    driver: bridge
+    name: suivi-sante-dev
+
+# ==============================================================================
+# VOLUMES DÉVELOPPEMENT
+# ==============================================================================
+volumes:
+  redis-dev-data:
+    driver: local
+    name: suivi-sante-redis-dev-data
+
+  postgres-dev-data:
+    driver: local
+    name: suivi-sante-postgres-dev-data

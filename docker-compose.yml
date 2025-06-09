@@ -1,0 +1,148 @@
+# ==============================================================================
+# DOCKER COMPOSE POUR SUIVI SANTÉ IA
+# ==============================================================================
+# Configuration Docker Compose pour le développement local
+# Version: 3.8
+# ==============================================================================
+
+version: "3.8"
+
+services: # ==============================================================================
+  # APPLICATION NUXT 3
+  # ==============================================================================
+  nuxt-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: suivi-sante-nuxt
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
+      # Variables Supabase (à définir dans .env)
+      - NUXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NUXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - suivi-sante-network
+    depends_on:
+      - redis
+    volumes:
+      # Montage pour les logs (optionnel)
+      - app-logs:/app/logs
+
+  # ==============================================================================
+  # REDIS POUR CACHE ET SESSIONS
+  # ==============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: suivi-sante-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-defaultpassword}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-defaultpassword}
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+    networks:
+      - suivi-sante-network
+
+  # ==============================================================================
+  # NGINX POUR REVERSE PROXY (OPTIONNEL)
+  # ==============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: suivi-sante-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - nuxt-app
+    restart: unless-stopped
+    networks:
+      - suivi-sante-network
+    profiles:
+      - nginx
+
+  # ==============================================================================
+  # POSTGRESQL LOCAL (DÉVELOPPEMENT UNIQUEMENT)
+  # ==============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: suivi-sante-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-suivi_sante}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/test_data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - suivi-sante-network
+    profiles:
+      - local-db
+
+# ==============================================================================
+# RÉSEAUX
+# ==============================================================================
+networks:
+  suivi-sante-network:
+    driver: bridge
+    name: suivi-sante-network
+
+# ==============================================================================
+# VOLUMES PERSISTANTS
+# ==============================================================================
+volumes:
+  redis-data:
+    driver: local
+    name: suivi-sante-redis-data
+
+  postgres-data:
+    driver: local
+    name: suivi-sante-postgres-data
+
+  app-logs:
+    driver: local
+    name: suivi-sante-app-logs
+
+  nginx-logs:
+    driver: local
+    name: suivi-sante-nginx-logs

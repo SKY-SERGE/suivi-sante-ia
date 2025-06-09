@@ -1,0 +1,70 @@
+# ==============================================================================
+# DOCKERIGNORE POUR SUIVI SANTÉ IA
+# ==============================================================================
+# Fichiers et dossiers à exclure lors du build Docker
+# ==============================================================================
+
+# Dépendances Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dossiers de build et cache
+.nuxt
+.output
+dist
+.cache
+
+# Fichiers de développement
+.env.local
+.env.development
+.env.test
+*.local
+
+# Fichiers Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation et README
+README.md
+CHANGELOG.md
+docs/
+
+# Fichiers d'éditeur
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Couverture de tests
+coverage/
+.nyc_output
+
+# Fichiers temporaires
+tmp/
+temp/
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Tests
+tests/
+test/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts

@@ -1,0 +1,246 @@
+# ==============================================================================
+# DOCKER COMPOSE OPTIMISÉ POUR PRODUCTION - SUIVI SANTÉ IA
+# ==============================================================================
+# Configuration optimisée pour la production avec sécurité renforcée
+# et performance améliorée
+# ==============================================================================
+
+version: "3.8"
+
+services:
+  # ==============================================================================
+  # APPLICATION NUXT 3 - PRODUCTION OPTIMISÉE
+  # ==============================================================================
+  nuxt-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: suivi-sante-nuxt:latest
+    container_name: suivi-sante-nuxt
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
+      - NODE_OPTIONS=--max-old-space-size=1024
+      - NUXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NUXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env
+    restart: unless-stopped
+
+    # Security enhancements
+    read_only: true
+    tmpfs:
+      - /tmp:exec,nodev,nosuid,size=100m
+      - /app/logs:nodev,nosuid,size=50m
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const http = require(''http''); const options = { host: ''localhost'', port: 3000, path: ''/api/health'', timeout: 2000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on(''error'', () => process.exit(1)); req.end();"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - suivi-sante-network
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    volumes:
+      # Logs persistence (read-write mount point)
+      - app-logs:/app/logs
+
+    # Security labels
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=suivi-sante-network"
+      - "com.docker.security.apparmor=docker-default"
+
+  # ==============================================================================
+  # REDIS POUR CACHE ET SESSIONS - OPTIMISÉ
+  # ==============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: suivi-sante-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+
+    # Redis optimized configuration
+    command: >
+      redis-server 
+      --appendonly yes 
+      --requirepass ${REDIS_PASSWORD:-defaultpassword}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --timeout 300
+
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-defaultpassword}
+
+    volumes:
+      - redis-data:/data
+
+    restart: unless-stopped
+
+    # Security enhancements
+    read_only: true
+    tmpfs:
+      - /tmp:nodev,nosuid,size=50m
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+    networks:
+      - suivi-sante-network
+
+  # ==============================================================================
+  # NGINX REVERSE PROXY - OPTIMISÉ
+  # ==============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: suivi-sante-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx-logs:/var/log/nginx
+      - nginx-cache:/var/cache/nginx
+
+    # Security enhancements
+    read_only: true
+    tmpfs:
+      - /tmp:nodev,nosuid,size=50m
+      - /var/run:nodev,nosuid,size=10m
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+    depends_on:
+      nuxt-app:
+        condition: service_healthy
+
+    restart: unless-stopped
+    networks:
+      - suivi-sante-network
+
+    profiles:
+      - nginx
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ==============================================================================
+# RÉSEAUX OPTIMISÉS
+# ==============================================================================
+networks:
+  suivi-sante-network:
+    driver: bridge
+    name: suivi-sante-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ==============================================================================
+# VOLUMES PERSISTANTS OPTIMISÉS
+# ==============================================================================
+volumes:
+  redis-data:
+    driver: local
+    name: suivi-sante-redis-data
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis
+
+  app-logs:
+    driver: local
+    name: suivi-sante-app-logs
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/app
+
+  nginx-logs:
+    driver: local
+    name: suivi-sante-nginx-logs
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/nginx
+
+  nginx-cache:
+    driver: local
+    name: suivi-sante-nginx-cache
+
+# ==============================================================================
+# CONFIGURATION X-HEADERS POUR SURVEILLANCE
+# ==============================================================================
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 30s

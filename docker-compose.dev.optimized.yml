@@ -1,0 +1,283 @@
+# ==============================================================================
+# DOCKER COMPOSE OPTIMISÉ POUR DÉVELOPPEMENT - SUIVI SANTÉ IA
+# ==============================================================================
+# Configuration optimisée pour le développement avec hot-reload et debugging
+# ==============================================================================
+
+version: "3.8"
+
+services:
+  # ==============================================================================
+  # APPLICATION NUXT 3 - DÉVELOPPEMENT OPTIMISÉ
+  # ==============================================================================
+  nuxt-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.optimized
+      target: base
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: suivi-sante-nuxt-dev
+    ports:
+      - "3000:3000"
+      - "24678:24678" # HMR
+      - "9229:9229" # Node.js debugging
+
+    environment:
+      - NODE_ENV=development
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NUXT_TELEMETRY_DISABLED=1
+      - NUXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NUXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - REDIS_URL=redis://redis-dev:6379
+
+    env_file:
+      - .env
+      - .env.development
+
+    volumes:
+      # Hot-reload optimized volumes
+      - ./nuxt-app:/app:cached
+      - /app/node_modules
+      - /app/.nuxt
+      - nuxt-dev-cache:/app/.output
+
+    # Development-friendly resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    restart: unless-stopped
+
+    networks:
+      - suivi-sante-dev
+
+    depends_on:
+      redis-dev:
+        condition: service_healthy
+
+    # Health check for development
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==============================================================================
+  # REDIS POUR DÉVELOPPEMENT - OPTIMISÉ
+  # ==============================================================================
+  redis-dev:
+    image: redis:7-alpine
+    container_name: suivi-sante-redis-dev
+    ports:
+      - "127.0.0.1:6379:6379"
+
+    command: >
+      redis-server 
+      --appendonly yes
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+
+    volumes:
+      - redis-dev-data:/data
+
+    restart: unless-stopped
+
+    # Development resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+    networks:
+      - suivi-sante-dev
+
+  # ==============================================================================
+  # POSTGRESQL POUR DÉVELOPPEMENT - OPTIMISÉ
+  # ==============================================================================
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: suivi-sante-postgres-dev
+    environment:
+      - POSTGRES_DB=suivi_sante_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=devpassword
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+
+    ports:
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/test_data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+      - postgres-dev-logs:/var/log/postgresql
+
+    # PostgreSQL optimizations for development
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=256MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+
+    restart: unless-stopped
+
+    # Development resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.2"
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d suivi_sante_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    networks:
+      - suivi-sante-dev
+
+  # ==============================================================================
+  # MAILHOG POUR TESTS D'EMAILS - OPTIMISÉ
+  # ==============================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: suivi-sante-mailhog
+    ports:
+      - "127.0.0.1:1025:1025" # SMTP
+      - "127.0.0.1:8025:8025" # Interface Web
+
+    restart: unless-stopped
+
+    # Resource limits for MailHog
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
+
+    networks:
+      - suivi-sante-dev
+
+  # ==============================================================================
+  # ADMINER POUR GESTION BDD - DÉVELOPPEMENT
+  # ==============================================================================
+  adminer:
+    image: adminer:latest
+    container_name: suivi-sante-adminer
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres-dev
+      - ADMINER_DESIGN=pepa-linha
+
+    restart: unless-stopped
+
+    # Resource limits for Adminer
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
+
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+
+    networks:
+      - suivi-sante-dev
+
+    profiles:
+      - adminer
+
+# ==============================================================================
+# RÉSEAUX DÉVELOPPEMENT OPTIMISÉS
+# ==============================================================================
+networks:
+  suivi-sante-dev:
+    driver: bridge
+    name: suivi-sante-dev
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# ==============================================================================
+# VOLUMES DÉVELOPPEMENT OPTIMISÉS
+# ==============================================================================
+volumes:
+  redis-dev-data:
+    driver: local
+    name: suivi-sante-redis-dev-data
+
+  postgres-dev-data:
+    driver: local
+    name: suivi-sante-postgres-dev-data
+
+  postgres-dev-logs:
+    driver: local
+    name: suivi-sante-postgres-dev-logs
+
+  nuxt-dev-cache:
+    driver: local
+    name: suivi-sante-nuxt-dev-cache
+
+# ==============================================================================
+# CONFIGURATIONS COMMUNES
+# ==============================================================================
+x-logging: &dev-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "2"
+
+x-restart-policy: &restart-policy
+  restart_policy:
+    condition: unless-stopped
+    delay: 5s
+    max_attempts: 3
+    window: 120s

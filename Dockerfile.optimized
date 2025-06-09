@@ -1,0 +1,114 @@
+# ==============================================================================
+# DOCKERFILE OPTIMISÉ POUR PRODUCTION - SUIVI SANTÉ IA
+# ==============================================================================
+# Multi-stage build optimisé pour réduire la taille de l'image finale
+# Sécurité renforcée et performances améliorées
+# ==============================================================================
+
+# Stage 1: Base image with security updates
+FROM node:18-alpine AS base
+
+# Install security updates and necessary dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    libc6-compat \
+    ca-certificates \
+    tzdata && \
+    rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user early for better security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nuxtjs --ingroup nodejs
+
+# Stage 2: Dependencies installation (optimized caching)
+FROM base AS deps
+
+# Copy package files with better layer caching
+COPY nuxt-app/package*.json ./
+COPY nuxt-app/yarn.lock* ./
+COPY nuxt-app/pnpm-lock.yaml* ./
+
+# Install dependencies with optimization flags
+RUN \
+  if [ -f yarn.lock ]; then \
+    yarn config set network-timeout 600000 && \
+    yarn --frozen-lockfile --production=false --silent; \
+  elif [ -f package-lock.json ]; then \
+    npm ci --only=production --silent --no-audit --no-fund; \
+  elif [ -f pnpm-lock.yaml ]; then \
+    corepack enable pnpm && \
+    pnpm i --frozen-lockfile --prod=false --silent; \
+  else \
+    echo "❌ Fichier de verrouillage non trouvé." && exit 1; \
+  fi
+
+# Stage 3: Build application
+FROM base AS builder
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code with .dockerignore optimization
+COPY nuxt-app/ .
+
+# Build environment variables
+ENV NODE_ENV=production
+ENV NITRO_PRESET=node-server
+ENV NUXT_TELEMETRY_DISABLED=1
+
+# Build application with optimization flags
+RUN npm run build && \
+    # Clean up build artifacts not needed in production but keep node_modules intact
+    rm -rf node_modules/.cache 2>/dev/null || true && \
+    rm -rf .nuxt/cache 2>/dev/null || true
+
+# Stage 4: Production image (minimal)
+FROM node:18-alpine AS runner
+
+# Install only essential runtime dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    dumb-init \
+    ca-certificates \
+    tzdata && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nuxtjs --ingroup nodejs
+
+# Set working directory
+WORKDIR /app
+
+# Production environment variables
+ENV NODE_ENV=production
+ENV NUXT_HOST=0.0.0.0
+ENV NUXT_PORT=3000
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
+# Copy built application with proper ownership
+COPY --from=builder --chown=nuxtjs:nodejs /app/.output /app/.output
+COPY --from=builder --chown=nuxtjs:nodejs /app/package.json /app/package.json
+COPY --from=builder --chown=nuxtjs:nodejs /app/node_modules /app/node_modules
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown nuxtjs:nodejs /app/logs
+
+# Switch to non-root user
+USER nuxtjs
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "const http = require('http'); const options = { host: 'localhost', port: 3000, path: '/api/health', timeout: 2000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
+
+# Expose port
+EXPOSE 3000
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start application
+CMD ["node", ".output/server/index.mjs"]
