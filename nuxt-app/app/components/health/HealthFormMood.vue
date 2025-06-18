@@ -10,7 +10,6 @@
           <button
             v-for="mood in moodLevels"
             :key="mood.value"
-            @click="selectMood(mood)"
             :class="[
               'flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200',
               selectedMood?.value === mood.value
@@ -18,6 +17,7 @@
                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50',
             ]"
             type="button"
+            @click="selectMood(mood)"
           >
             <Icon :name="mood.icon" class="h-6 w-6 mb-1" />
             <span class="text-xs font-medium">{{ mood.label }}</span>
@@ -56,7 +56,6 @@
         <button
           v-for="factor in moodFactors"
           :key="factor.id"
-          @click="toggleFactor(factor.id)"
           :class="[
             'flex items-center p-2 rounded-lg border text-sm transition-colors',
             selectedFactors.includes(factor.id)
@@ -64,6 +63,7 @@
               : 'border-gray-200 hover:border-gray-300',
           ]"
           type="button"
+          @click="toggleFactor(factor.id)"
         >
           <Icon :name="factor.icon" class="h-4 w-4 mr-2" />
           {{ factor.label }}

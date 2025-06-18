@@ -46,7 +46,5 @@
 
 <script setup lang="ts">
 // Pas de middleware requis pour cette page
-definePageMeta({
-  middleware: "auth",
-});
+const { isAuthenticated } = useAuth();
 </script>

@@ -22,11 +22,11 @@
           <CardContent>
             <form
               id="login-form"
-              @submit="onSubmit"
               class="space-y-4"
               role="form"
               aria-labelledby="login-title"
               novalidate
+              @submit="onSubmit"
             >
               <FormField v-slot="{ componentField }" name="email">
                 <FormItem>
@@ -109,7 +109,6 @@
                   v-if="isLoading"
                   name="lucide:loader-2"
                   class="mr-2 h-4 w-4 animate-spin"
-                  aria-hidden="true"
                 />
                 {{ isLoading ? "Connexion..." : "Se connecter" }}
               </Button>
@@ -175,9 +174,11 @@ const formSchema = toTypedSchema(
     password: z
       .string()
       .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-    role: z.enum(["patient", "doctor", "admin"], {
-      required_error: "Veuillez sélectionner un rôle",
-    }),
+    role: z
+      .enum(["patient", "doctor", "admin"], {
+        required_error: "Veuillez sélectionner un rôle",
+      })
+      .optional(),
   })
 );
 
@@ -187,14 +188,11 @@ const form = useForm({
 });
 
 // États réactifs
-const isLoading = ref(false);
-const { signIn, redirectToDashboard } = useAuth();
+const { signIn, redirectToDashboard, isLoading } = useAuth();
 const toastStore = useToastStore();
 
 // Gestion de la soumission
 const onSubmit = form.handleSubmit(async (values) => {
-  isLoading.value = true;
-
   try {
     console.log(
       "Tentative de connexion pour:",
@@ -203,11 +201,7 @@ const onSubmit = form.handleSubmit(async (values) => {
       values.role
     );
 
-    const { data, error } = await signIn(
-      values.email,
-      values.password,
-      values.role
-    );
+    const { data, error } = await signIn(values.email, values.password);
 
     if (error) {
       console.error("Erreur de connexion:", error);
@@ -232,8 +226,6 @@ const onSubmit = form.handleSubmit(async (values) => {
     toastStore.error(
       error?.message || "Une erreur est survenue lors de la connexion"
     );
-  } finally {
-    isLoading.value = false;
   }
 });
 </script>

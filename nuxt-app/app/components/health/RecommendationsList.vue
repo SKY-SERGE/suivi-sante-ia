@@ -257,6 +257,8 @@
 
 <script setup lang="ts">
 import type { MealRecommendation } from "@/composables/useMeals";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // Props
 interface Props {

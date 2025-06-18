@@ -458,8 +458,8 @@ const pending = ref(true);
 const error = ref<string | null>(null);
 
 // Composables
-const { $supabase } = useNuxtApp();
-const { user } = useSupabaseUser();
+const supabaseClient = useSupabaseClient();
+const { user, userId } = useUser();
 const toast = useToastStore();
 const {
   sendSecureMessage,
@@ -493,7 +493,7 @@ async function loadConversations() {
     pending.value = true;
     error.value = null;
 
-    const { data, error: fetchError } = await $supabase
+    const { data, error: fetchError } = await supabaseClient
       .from("secure_messages")
       .select(
         `
@@ -504,7 +504,7 @@ async function loadConversations() {
         )
       `
       )
-      .or(`patient_id.eq.${user.value?.id},doctor_id.eq.${user.value?.id}`)
+      .or(`patient_id.eq.${userId.value},doctor_id.eq.${userId.value}`)
       .order("created_at", { ascending: false });
 
     if (fetchError) throw fetchError;
@@ -514,7 +514,7 @@ async function loadConversations() {
 
     data?.forEach((message) => {
       const otherUserId =
-        message.patient_id === user.value?.id
+        message.patient_id === userId.value
           ? message.doctor_id
           : message.patient_id;
 
@@ -547,7 +547,7 @@ async function loadConversations() {
 
 async function loadLinkedDoctors() {
   try {
-    const { data, error: fetchError } = await $supabase
+    const { data, error: fetchError } = await supabaseClient
       .from("patient_doctor_consents")
       .select(
         `
@@ -558,7 +558,7 @@ async function loadLinkedDoctors() {
           last_name        )
       `
       )
-      .eq("patient_id", user.value?.id)
+      .eq("patient_id", userId.value)
       .eq("status", "granted");
 
     if (fetchError) throw fetchError;
@@ -582,13 +582,13 @@ async function selectConversation(conversation: any) {
   selectedConversation.value = conversation;
 
   try {
-    const { data, error: fetchError } = await $supabase
+    const { data, error: fetchError } = await supabaseClient
       .from("secure_messages")
       .select("*")
       .or(
         `
-        and(patient_id.eq.${user.value?.id},doctor_id.eq.${conversation.doctor_id}),
-        and(patient_id.eq.${conversation.patient_id},doctor_id.eq.${user.value?.id})
+        and(patient_id.eq.${userId.value},doctor_id.eq.${conversation.doctor_id}),
+        and(patient_id.eq.${conversation.patient_id},doctor_id.eq.${userId.value})
       `
       )
       .order("created_at", { ascending: true });
@@ -599,7 +599,7 @@ async function selectConversation(conversation: any) {
 
     // Marquer comme lu
     if (!conversation.is_read && conversation.sender_role !== "patient") {
-      await $supabase
+      await supabaseClient
         .from("secure_messages")
         .update({ is_read: true })
         .eq("id", conversation.id);
@@ -623,7 +623,7 @@ async function sendReply() {
 
     // Utilisation du composable sécurisé
     const result = await sendSecureMessage({
-      patient_id: user.value?.id!,
+      patient_id: userId.value!,
       doctor_id: selectedConversation.value.doctor_id,
       content: replyMessage.value.trim(),
       subject: selectedConversation.value.subject || "Discussion générale",
@@ -660,10 +660,10 @@ async function sendNewMessage() {
   try {
     sending.value = true;
 
-    const { error: insertError } = await $supabase
+    const { error: insertError } = await supabaseClient
       .from("secure_messages")
       .insert({
-        patient_id: user.value?.id,
+        patient_id: userId.value,
         doctor_id: newMessage.value.doctorId,
         content: newMessage.value.content.trim(),
         subject: newMessage.value.subject.trim() || "Discussion générale",
@@ -697,7 +697,7 @@ async function archiveConversation() {
   if (!selectedConversation.value) return;
 
   try {
-    const { error: updateError } = await $supabase
+    const { error: updateError } = await supabaseClient
       .from("secure_messages")
       .update({ is_archived: true })
       .eq("id", selectedConversation.value.id);
@@ -719,7 +719,7 @@ async function markAsUrgent() {
   try {
     const newUrgentStatus = !selectedConversation.value.is_urgent;
 
-    const { error: updateError } = await $supabase
+    const { error: updateError } = await supabaseClient
       .from("secure_messages")
       .update({ is_urgent: newUrgentStatus })
       .eq("id", selectedConversation.value.id);

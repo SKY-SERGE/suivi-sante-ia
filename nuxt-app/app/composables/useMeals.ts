@@ -48,8 +48,8 @@ export interface MealRecommendation {
 }
 
 export const useMeals = () => {
-  const { user } = useSupabaseUser();
-  const supabase = useSupabase();
+  const { user, userId } = useUser();
+  const supabaseClient = useSupabaseClient();
 
   // Intégrer le moteur de recommandations
   const { generateRecommendationsForMeal, getPersonalizedTips } =
@@ -77,7 +77,7 @@ export const useMeals = () => {
     error.value = null;
 
     try {
-      let query = supabase
+      let query = supabaseClient
         .from("meal_records")
         .select(
           `
@@ -97,7 +97,7 @@ export const useMeals = () => {
           updated_at
         `
         )
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .order("datetime", { ascending: false });
 
       if (limit) {
@@ -139,11 +139,11 @@ export const useMeals = () => {
     error.value = null;
 
     try {
-      const { data, error: saveError } = await supabase
+      const { data, error: saveError } = await supabaseClient
         .from("meal_records")
         .insert([
           {
-            user_id: user.value.id,
+            user_id: userId.value,
             type: mealData.type,
             datetime: mealData.datetime,
             foods: mealData.foods,
@@ -334,14 +334,14 @@ export const useMeals = () => {
         delete dbUpdates.ai_analysis;
       }
 
-      const { data, error: updateError } = await supabase
+      const { data, error: updateError } = await supabaseClient
         .from("meal_records")
         .update({
           ...dbUpdates,
           updated_at: new Date().toISOString(),
         })
         .eq("id", mealId)
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .select()
         .single();
 
@@ -382,11 +382,11 @@ export const useMeals = () => {
     error.value = null;
 
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseClient
         .from("meal_records")
         .delete()
         .eq("id", mealId)
-        .eq("user_id", user.value.id);
+        .eq("user_id", userId.value);
 
       if (deleteError) {
         error.value = deleteError.message;
@@ -412,10 +412,10 @@ export const useMeals = () => {
     }
 
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await supabaseClient
         .from("meal_recommendations")
         .select("*")
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .order("created_at", { ascending: false });
 
       if (fetchError) {
@@ -436,11 +436,11 @@ export const useMeals = () => {
     if (!user.value) return { error: "Utilisateur non authentifié" };
 
     try {
-      const { data, error: updateError } = await supabase
+      const { data, error: updateError } = await supabaseClient
         .from("meal_recommendations")
         .update({ is_read: true })
         .eq("id", recommendationId)
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .select()
         .single();
 
@@ -476,11 +476,11 @@ export const useMeals = () => {
       );
       if (!recommendation) return { error: "Recommandation non trouvée" };
 
-      const { data, error: updateError } = await supabase
+      const { data, error: updateError } = await supabaseClient
         .from("meal_recommendations")
         .update({ is_bookmarked: !recommendation.is_bookmarked })
         .eq("id", recommendationId)
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .select()
         .single();
 
@@ -514,11 +514,11 @@ export const useMeals = () => {
     if (!user.value) return { error: "Utilisateur non authentifié" };
 
     try {
-      const { data, error: updateError } = await supabase
+      const { data, error: updateError } = await supabaseClient
         .from("meal_recommendations")
         .update({ feedback })
         .eq("id", recommendationId)
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .select()
         .single();
 
@@ -637,10 +637,10 @@ export const useMeals = () => {
       for (const rec of aiResponse.recommendations) {
         if (!user.value) continue;
 
-        const { data, error: saveError } = await supabase
+        const { data, error: saveError } = await supabaseClient
           .from("meal_recommendations")
           .insert({
-            user_id: user.value.id,
+            user_id: userId.value,
             meal_id: currentMeal.id,
             category: rec.category,
             title: rec.title,

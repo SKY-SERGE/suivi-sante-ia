@@ -38,8 +38,8 @@ interface GoalProgress {
 }
 
 export const useHealthGoals = () => {
-  const { user } = useSupabaseUser();
-  const supabase = useSupabase();
+  const { user, userId } = useUser();
+  const supabaseClient = useSupabaseClient();
 
   /**
    * Récupère tous les objectifs de l'utilisateur
@@ -50,10 +50,10 @@ export const useHealthGoals = () => {
     if (!user.value) return [];
 
     try {
-      let query = supabase
+      let query = supabaseClient
         .from("health_goals")
         .select("*")
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .order("created_at", { ascending: false });
 
       if (status) {
@@ -79,10 +79,10 @@ export const useHealthGoals = () => {
 
     try {
       const { start_date, ...restData } = goalData;
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("health_goals")
         .insert({
-          user_id: user.value.id,
+          user_id: userId.value,
           start_date: start_date || new Date().toISOString().split("T")[0],
           ...restData,
         })
@@ -112,11 +112,11 @@ export const useHealthGoals = () => {
         updates.completed_at = new Date().toISOString();
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("health_goals")
         .update(updates)
         .eq("id", goalId)
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .select()
         .single();
 
@@ -135,11 +135,11 @@ export const useHealthGoals = () => {
     if (!user.value) return false;
 
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from("health_goals")
         .delete()
         .eq("id", goalId)
-        .eq("user_id", user.value.id);
+        .eq("user_id", userId.value);
 
       if (error) throw error;
       return true;
@@ -160,20 +160,20 @@ export const useHealthGoals = () => {
 
     try {
       // Récupérer l'objectif
-      const { data: goal, error: goalError } = await supabase
+      const { data: goal, error: goalError } = await supabaseClient
         .from("health_goals")
         .select("*")
         .eq("id", goalId)
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .single();
 
       if (goalError || !goal) return null;
 
       // Récupérer les dernières données de santé pertinentes
-      const { data: healthData, error: healthError } = await supabase
+      const { data: healthData, error: healthError } = await supabaseClient
         .from("health_data")
         .select("*")
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .eq("data_type", dataType)
         .order("recorded_at", { ascending: false })
         .limit(1);
@@ -286,10 +286,10 @@ export const useHealthGoals = () => {
 
     try {
       // Récupérer les types de données de santé déjà enregistrées
-      const { data: healthData, error } = await supabase
+      const { data: healthData, error } = await supabaseClient
         .from("health_data")
         .select("data_type, value, unit")
-        .eq("user_id", user.value.id)
+        .eq("user_id", userId.value)
         .order("recorded_at", { ascending: false });
 
       if (error || !healthData) return [];

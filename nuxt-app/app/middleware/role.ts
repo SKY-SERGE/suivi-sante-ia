@@ -1,8 +1,6 @@
 import type { UserRole } from "~/composables/useAuth";
 
 export default defineNuxtRouteMiddleware((to) => {
-  const { canAccess } = useAuth();
-
   // Définir les rôles requis selon la route
   const requiredRoles: UserRole[] = [];
 
@@ -15,8 +13,11 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   // Si des rôles sont requis et que l'utilisateur n'a pas accès
-  if (requiredRoles.length > 0 && !canAccess(requiredRoles)) {
-    // Rediriger vers la page d'accès non autorisé
-    return navigateTo("/unauthorized");
-  }
+  setTimeout(() => {
+    const { canAccess } = useAuth();
+    if (requiredRoles.length > 0 && !canAccess(requiredRoles)) {
+      // Rediriger vers la page d'accès non autorisé
+      return navigateTo("/unauthorized");
+    }
+  }, 2000); // Délai pour laisser le temps à l'authentification de se faire
 });

@@ -30,6 +30,8 @@ const cardVariants = cva(
 export interface CardProps
   extends /* @vue-ignore */ VariantProps<typeof cardVariants> {
   class?: HTMLAttributes["class"];
+  variant?: "default" | "interactive" | "elevated" | "flat";
+  size?: "default" | "sm" | "lg" | "none";
 }
 
 const props = withDefaults(defineProps<CardProps>(), {

@@ -12,7 +12,7 @@
         </DialogDescription>
       </DialogHeader>
 
-      <div class="space-y-6">
+      <div class="space-y-6 p-6">
         <!-- Section principale -->
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div class="flex items-start space-x-3">
@@ -171,8 +171,8 @@
         <div class="bg-gray-50 p-4 rounded-lg">
           <label class="flex items-start space-x-3 cursor-pointer">
             <Checkbox
-              :checked="hasAgreed"
-              @update:checked="hasAgreed = $event"
+              :model-value="hasAgreed"
+              @update:model-value="hasAgreed = $event"
               class="mt-1"
             />
             <div class="text-sm">
@@ -204,6 +204,17 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+
 interface Props {
   isOpen: boolean;
 }

@@ -2,7 +2,7 @@
   <!-- Overlay pour fermer le menu -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-black bg-opacity-20 z-40"
+    class="fixed inset-0 bg-black/50 z-40"
     @click="closeMenu"
   />
 
@@ -19,9 +19,9 @@
     <div class="space-y-2">
       <template v-for="action in availableActions" :key="action.key">
         <button
-          @click="executeAction(action)"
           class="w-full flex items-center p-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
           :class="action.danger ? 'hover:bg-red-50 hover:text-red-700' : ''"
+          @click="executeAction(action)"
         >
           <Icon
             :name="action.icon"
@@ -44,19 +44,17 @@
 
   <!-- Bouton flottant -->
   <button
-    @click="toggleMenu"
-    class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 z-30 flex items-center justify-center"
+    class="animate-pulse fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 z-30 flex items-center justify-center"
     :class="isOpen ? 'rotate-45' : 'hover:scale-105'"
     aria-label="Menu d'actions rapides"
     :aria-expanded="isOpen"
+    @click="toggleMenu"
   >
-    <Icon name="lucide:plus" class="h-6 w-6" />
+    <Icon name="lucide:zap" class="h-6 w-6" />
   </button>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
-
 interface QuickAction {
   key: string;
   title: string;
@@ -103,7 +101,7 @@ const availableActions = computed<QuickAction[]>(() => {
       key: "messages",
       title: "Messages",
       description: "Accéder à la messagerie",
-      icon: "lucide:message-square",
+      icon: "lucide:message-circle-more",
       action: () => router.push(`/${role}/messages`),
       shortcut: "Ctrl+M",
     },

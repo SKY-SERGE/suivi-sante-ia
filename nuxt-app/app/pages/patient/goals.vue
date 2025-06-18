@@ -363,6 +363,16 @@
 </template>
 
 <script setup lang="ts">
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 definePageMeta({
   layout: "dashboard",
   middleware: ["auth", "role"],

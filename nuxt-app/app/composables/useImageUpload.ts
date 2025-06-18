@@ -26,8 +26,8 @@ export interface UploadError {
 }
 
 export const useImageUpload = () => {
-  const supabase = useSupabase();
-  const { user } = useSupabaseUser();
+  const supabaseClient = useSupabaseClient();
+  const { user } = useUser();
 
   const isUploading = ref(false);
   const uploadProgress = ref<UploadProgress | null>(null);
@@ -35,7 +35,7 @@ export const useImageUpload = () => {
   const uploadError = ref<UploadError | null>(null);
 
   /**
-   * Upload une image vers Supabase Storage
+   * Upload une image vers supabaseClient Storage
    */
   const uploadImage = async (
     processedImage: ProcessedImage,
@@ -71,13 +71,14 @@ export const useImageUpload = () => {
         message: "Upload de l'image principale...",
       };
 
-      const { data: imageData, error: imageError } = await supabase.storage
-        .from("meal-images")
-        .upload(fileName, processedImage.processedBlob, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: `image/${processedImage.metadata.format}`,
-        });
+      const { data: imageData, error: imageError } =
+        await supabaseClient.storage
+          .from("meal-images")
+          .upload(fileName, processedImage.processedBlob, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: `image/${processedImage.metadata.format}`,
+          });
 
       if (imageError) {
         throw new Error(`Erreur upload image: ${imageError.message}`);
@@ -94,7 +95,7 @@ export const useImageUpload = () => {
       const thumbnailBlob = await createThumbnail(processedImage.originalFile);
 
       const { data: thumbnailData, error: thumbnailError } =
-        await supabase.storage
+        await supabaseClient.storage
           .from("meal-images")
           .upload(thumbnailFileName, thumbnailBlob, {
             cacheControl: "3600",
@@ -114,12 +115,14 @@ export const useImageUpload = () => {
         message: "Génération des URLs...",
       };
 
-      const { data: imageUrl } = supabase.storage
+      const { data: imageUrl } = supabaseClient.storage
         .from("meal-images")
         .getPublicUrl(fileName);
 
       const { data: thumbnailUrl } = thumbnailData
-        ? supabase.storage.from("meal-images").getPublicUrl(thumbnailFileName)
+        ? supabaseClient.storage
+            .from("meal-images")
+            .getPublicUrl(thumbnailFileName)
         : { data: { publicUrl: imageUrl.publicUrl } };
 
       // Étape 5: Enregistrer les métadonnées en base
@@ -149,7 +152,7 @@ export const useImageUpload = () => {
         created_at: new Date().toISOString(),
       };
 
-      const { data: savedImage, error: saveError } = await supabase
+      const { data: savedImage, error: saveError } = await supabaseClient
         .from("meal_images")
         .insert(imageRecord)
         .select()
@@ -245,7 +248,7 @@ export const useImageUpload = () => {
    * Supprime une image du stockage
    */
   const deleteImage = async (imagePath: string): Promise<void> => {
-    const { error } = await supabase.storage
+    const { error } = await supabaseClient.storage
       .from("meal-images")
       .remove([imagePath]);
 
@@ -254,7 +257,10 @@ export const useImageUpload = () => {
     }
 
     // Supprimer aussi les métadonnées
-    await supabase.from("meal_images").delete().eq("file_path", imagePath);
+    await supabaseClient
+      .from("meal_images")
+      .delete()
+      .eq("file_path", imagePath);
   };
 
   /**
@@ -265,7 +271,7 @@ export const useImageUpload = () => {
   ): Promise<UploadedImage[]> => {
     if (!user.value) return [];
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("meal_images")
       .select("*")
       .eq("user_id", user.value.id)

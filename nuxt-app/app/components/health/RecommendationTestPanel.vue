@@ -1,7 +1,7 @@
 <template>
   <Card class="p-4 border-yellow-200 bg-yellow-50">
     <div class="flex items-start space-x-3">
-      <Icon name="lucide:flask" class="h-5 w-5 text-yellow-600 mt-0.5" />
+      <Icon name="lucide:book-check" class="h-5 w-5 text-yellow-600 mt-0.5" />
       <div class="flex-1">
         <h4 class="font-medium text-yellow-900 mb-2">
           Tests de l'interface de recommandations
@@ -85,7 +85,7 @@ const props = defineProps<Props>();
 
 // Composables
 const { showToast } = useToast();
-const supabase = useSupabase();
+const supabaseClient = useSupabaseClient();
 
 // État
 const testResults = ref<
@@ -117,7 +117,7 @@ const testBasicRecommendations = async () => {
     }
 
     // Insérer en base de données
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from("meal_recommendations")
       .insert(testRecs);
 
@@ -156,7 +156,7 @@ const testBasicRecommendations = async () => {
 const testMetricsCalculation = async () => {
   try {
     // Récupérer les recommandations existantes
-    const { data: recommendations, error } = await supabase
+    const { data: recommendations, error } = await supabaseClient
       .from("meal_recommendations")
       .select("*")
       .eq("user_id", props.userId);
@@ -207,7 +207,7 @@ const testMetricsCalculation = async () => {
 const testFeedbackFlow = async () => {
   try {
     // Récupérer une recommandation non lue
-    const { data: recommendations, error: fetchError } = await supabase
+    const { data: recommendations, error: fetchError } = await supabaseClient
       .from("meal_recommendations")
       .select("*")
       .eq("user_id", props.userId)
@@ -231,7 +231,7 @@ const testFeedbackFlow = async () => {
     const recommendation = recommendations[0];
 
     // Test: marquer comme lu
-    const { error: readError } = await supabase
+    const { error: readError } = await supabaseClient
       .from("meal_recommendations")
       .update({ is_read: true })
       .eq("id", recommendation.id);
@@ -242,7 +242,7 @@ const testFeedbackFlow = async () => {
     }
 
     // Test: ajouter un feedback
-    const { error: feedbackError } = await supabase
+    const { error: feedbackError } = await supabaseClient
       .from("meal_recommendations")
       .update({ feedback: "helpful" })
       .eq("id", recommendation.id);
@@ -253,7 +253,7 @@ const testFeedbackFlow = async () => {
     }
 
     // Test: bookmarker
-    const { error: bookmarkError } = await supabase
+    const { error: bookmarkError } = await supabaseClient
       .from("meal_recommendations")
       .update({ is_bookmarked: true })
       .eq("id", recommendation.id);
@@ -287,7 +287,7 @@ const cleanupTestData = async () => {
     // Supprimer les recommandations de test (créées dans les dernières heures)
     const cutoffTime = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(); // 24h ago
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from("meal_recommendations")
       .delete()
       .eq("user_id", props.userId)

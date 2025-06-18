@@ -40,13 +40,15 @@
         </div>
       </UiButton>
     </NuxtLink>
-    <UiButton class="justify-start h-auto p-4" variant="outline">
-      <div class="text-left">
-        <Icon name="lucide:camera" class="h-5 w-5 mb-2" />
-        <div class="font-medium">Photo repas</div>
-        <div class="text-sm text-gray-500">Analyser vos repas par IA</div>
-      </div>
-    </UiButton>
+    <NuxtLink to="/patient/meals" class="block">
+      <UiButton class="justify-start h-auto p-4 w-full" variant="outline">
+        <div class="text-left">
+          <Icon name="lucide:camera" class="h-5 w-5 mb-2" />
+          <div class="font-medium">Photo repas</div>
+          <div class="text-sm text-gray-500">Analyser vos repas par IA</div>
+        </div>
+      </UiButton>
+    </NuxtLink>
 
     <NuxtLink to="/consents" class="block">
       <UiButton class="justify-start h-auto p-4 w-full" variant="outline">

@@ -9,7 +9,13 @@
       <BaseAppSidebar />
 
       <!-- Zone de contenu principal -->
-      <main class="flex-1 overflow-auto">
+      <main
+        class="flex-1 overflow-auto"
+        :class="{
+          'ml-(--sidebar-width-collapsed)': sidebarsIsCollapsed,
+          'ml-(--sidebar-width)': !sidebarsIsCollapsed,
+        }"
+      >
         <!-- Breadcrumbs -->
         <BaseAppBreadcrumbs>
           <template #actions>
@@ -39,5 +45,8 @@
 
 <script setup lang="ts">
 // Ce layout est utilisé pour les pages de dashboard avec navigation latérale
+import BaseAppSidebar from "@/components/base/AppSidebar.vue";
+
+const sidebarsIsCollapsed = useState("sidebar-collapsed");
 const { notifications, removeNotification } = useNotifications();
 </script>

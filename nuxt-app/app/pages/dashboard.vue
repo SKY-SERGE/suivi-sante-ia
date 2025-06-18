@@ -1,41 +1,54 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 flex flex-col gap-6">
     <!-- Titre de bienvenue -->
-    <div class="mb-8">
+    <div class="mb-2">
       <h1 class="text-3xl font-bold text-gray-900">Mon espace personnel</h1>
       <p class="mt-2 text-gray-600">
         Bienvenue dans votre espace personnel de suivi de santé
       </p>
     </div>
 
-    <!-- Messages selon le rôle -->
-    <Card v-if="userProfile" class="mb-6">
-      <CardHeader>
-        <CardTitle class="flex items-center">
-          <Icon
-            :name="getRoleIcon(userProfile.role)"
-            class="h-5 w-5 mr-2 text-blue-600"
-          />
-          Espace {{ getRoleLabel(userProfile.role) }}
-        </CardTitle>
-        <CardDescription>
-          {{ getRoleDescription(userProfile.role) }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div class="space-y-4">
-          <!-- Fonctionnalités selon le rôle -->
-          <EspacePatient v-if="userProfile.role === 'patient'"></EspacePatient>
-          <EspaceDoctor
-            v-else-if="userProfile.role === 'doctor'"
-          ></EspaceDoctor>
-          <EspaceAdmin v-else-if="userProfile.role === 'admin'"></EspaceAdmin>
-        </div>
-      </CardContent>
-    </Card>
+    <div class="order-3">
+      <!-- Messages selon le rôle -->
+      <Card v-if="userProfile">
+        <CardHeader>
+          <CardTitle class="flex items-center">
+            <Icon
+              :name="getRoleIcon(userProfile.role)"
+              class="h-5 w-5 mr-2 text-blue-600"
+            />
+            Espace {{ getRoleLabel(userProfile.role) }}
+          </CardTitle>
+          <CardDescription>
+            {{ getRoleDescription(userProfile.role) }}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="space-y-4">
+            <!-- Fonctionnalités selon le rôle -->
+            <EspacePatient
+              v-if="userProfile.role === 'patient'"
+            ></EspacePatient>
+            <EspaceDoctor
+              v-else-if="userProfile.role === 'doctor'"
+            ></EspaceDoctor>
+            <EspaceAdmin v-else-if="userProfile.role === 'admin'"></EspaceAdmin>
+          </div>
+        </CardContent>
+      </Card>
+      <Alert v-else-if="error" variant="destructive">
+        <AlertTriangle class="w-4 h-4" />
+        <AlertTitle>Erreur de chargement du profil</AlertTitle>
+        <AlertDescription>
+          Impossible de charger les informations de votre profil. Veuillez
+          réessayer plus tard.
+          {{ error }}
+        </AlertDescription>
+      </Alert>
+    </div>
 
     <!-- Statistiques rapides -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 order-2">
       <Card>
         <CardHeader
           class="flex flex-row items-center justify-between space-y-0 pb-2"
@@ -92,6 +105,8 @@
 </template>
 
 <script setup lang="ts">
+import { AlertTriangle } from "lucide-vue-next";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -101,12 +116,7 @@ import {
 } from "@/components/ui/card";
 
 // Composables
-const { user, userProfile, logout } = useAuth();
-
-// Gestion de la déconnexion
-const handleSignOut = async () => {
-  await logout();
-};
+const { userProfile, error } = useAuth();
 
 // Meta données de la page
 definePageMeta({

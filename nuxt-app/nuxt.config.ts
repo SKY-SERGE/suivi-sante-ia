@@ -8,24 +8,13 @@ export default defineNuxtConfig({
     compatibilityVersion: 4,
   },
 
-  modules: [
-    "@nuxt/eslint",
-    "@nuxt/fonts",
-    "@nuxt/icon",
-    "@nuxt/image",
-    "@pinia/nuxt",
-    "shadcn-nuxt",
-  ],
-
-  vite: {
-    plugins: [tailwindcss()],
-  },
-
   runtimeConfig: {
     // Private keys are only available on the server
     googleVisionApiKey: process.env.GOOGLE_VISION_API_KEY,
     googleVisionProjectId: process.env.GOOGLE_VISION_PROJECT_ID,
     googleAiApiKey: process.env.GOOGLE_AI_API_KEY,
+    // Clé service role Supabase pour contourner RLS côté serveur
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     // Clé secrète pour CSRF protection
     csrfSecret:
       process.env.NUXT_CSRF_SECRET || "default-secret-change-in-production",
@@ -40,7 +29,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ["~/assets/css/tailwind.css", "~/assets/css/app.css"],
+  css: ["~/assets/css/app.css"],
 
   app: {
     head: {
@@ -74,6 +63,43 @@ export default defineNuxtConfig({
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
         { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       ],
+    },
+  },
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
+  modules: [
+    "@nuxt/eslint",
+    "@nuxt/fonts",
+    "@nuxt/icon",
+    "@nuxt/image",
+    "@pinia/nuxt",
+    "@nuxtjs/supabase",
+    "shadcn-nuxt",
+  ],
+
+  shadcn: {
+    /**
+     * Prefix for all the imported component
+     */
+    prefix: "",
+    /**
+     * Directory that the component lives in.
+     * @default "./components/ui"
+     */
+    componentDir: "./components/ui",
+  },
+
+  // Configuration Supabase
+  supabase: {
+    url: process.env.NUXT_PUBLIC_SUPABASE_URL,
+    key: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY,
+    redirectOptions: {
+      login: "/auth/login",
+      callback: "/auth/callback",
+      exclude: ["/"],
     },
   },
 });

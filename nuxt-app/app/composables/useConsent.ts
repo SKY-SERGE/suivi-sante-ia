@@ -5,8 +5,8 @@ type ConsentInsert = Database["public"]["Tables"]["consents"]["Insert"];
 type ConsentUpdate = Database["public"]["Tables"]["consents"]["Update"];
 
 export const useConsent = () => {
-  const supabase = useSupabase();
-  const { user } = useSupabaseUser();
+  const supabaseClient = useSupabaseClient();
+  const { user, userId } = useUser();
 
   /**
    * Créer une demande de consentement d'un patient vers un médecin
@@ -17,13 +17,13 @@ export const useConsent = () => {
     }
 
     const consentData: ConsentInsert = {
-      patient_id: user.value.id,
+      patient_id: userId.value,
       doctor_id: doctorId,
       status: "pending",
       notes,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("consents")
       .insert(consentData)
       .select()
@@ -48,7 +48,7 @@ export const useConsent = () => {
       expires_at: expiresAt,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("consents")
       .update(updateData)
       .eq("id", consentId)
@@ -73,7 +73,7 @@ export const useConsent = () => {
       revoked_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("consents")
       .update(updateData)
       .eq("id", consentId)
@@ -97,9 +97,9 @@ export const useConsent = () => {
       throw new Error("Utilisateur non authentifié");
     }
 
-    const userId = patientId || user.value.id;
+    const userId = patientId || userId.value;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("consents")
       .select(
         `
@@ -133,9 +133,9 @@ export const useConsent = () => {
       throw new Error("Utilisateur non authentifié");
     }
 
-    const userId = doctorId || user.value.id;
+    const userId = doctorId || userId.value;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("consents")
       .select(
         `
@@ -164,7 +164,7 @@ export const useConsent = () => {
    * Vérifier si un consentement existe et est actif entre un patient et un médecin
    */
   const checkConsentStatus = async (patientId: string, doctorId: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("consents")
       .select("*")
       .eq("patient_id", patientId)
@@ -197,7 +197,7 @@ export const useConsent = () => {
    * Rechercher des médecins disponibles pour demander un consentement
    */
   const searchDoctors = async (searchTerm?: string) => {
-    let query = supabase
+    let query = supabaseClient
       .from("users")
       .select("id, first_name, last_name, email, specialization")
       .eq("role", "doctor")
@@ -229,10 +229,10 @@ export const useConsent = () => {
     }
 
     // Obtenir le profil utilisateur pour connaître son rôle
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseClient
       .from("users")
       .select("role")
-      .eq("id", user.value.id)
+      .eq("id", userId.value)
       .single();
 
     if (!profile) {
@@ -241,18 +241,18 @@ export const useConsent = () => {
 
     let query;
     if (profile.role === "patient") {
-      query = supabase
+      query = supabaseClient
         .from("consents")
         .select("status")
-        .eq("patient_id", user.value.id);
+        .eq("patient_id", userId.value);
     } else if (profile.role === "doctor") {
-      query = supabase
+      query = supabaseClient
         .from("consents")
         .select("status")
-        .eq("doctor_id", user.value.id);
+        .eq("doctor_id", userId.value);
     } else {
       // Admin peut voir tous les consentements
-      query = supabase.from("consents").select("status");
+      query = supabaseClient.from("consents").select("status");
     }
 
     const { data, error } = await query;

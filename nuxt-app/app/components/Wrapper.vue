@@ -1,5 +1,5 @@
 <template>
-  <slot></slot>
+  <slot />
   <Toaster position="bottom-right" />
 </template>
 

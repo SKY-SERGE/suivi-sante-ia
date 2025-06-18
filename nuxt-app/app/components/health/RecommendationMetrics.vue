@@ -271,6 +271,7 @@ import type {
   RecommendationMetrics,
   RecommendationInsight,
 } from "@/composables/useRecommendationMetrics";
+import { Card } from "@/components/ui/card";
 
 interface Props {
   recommendations: any[];

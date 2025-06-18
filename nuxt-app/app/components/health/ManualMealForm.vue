@@ -180,6 +180,8 @@
 </template>
 
 <script setup lang="ts">
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 interface FoodItem {
   name: string;
   quantity: string;

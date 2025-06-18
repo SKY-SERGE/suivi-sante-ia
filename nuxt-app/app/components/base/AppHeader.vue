@@ -126,11 +126,7 @@
             <div class="flex items-center space-x-3">
               <span class="text-sm text-gray-700 hidden sm:block">
                 Bonjour,
-                {{
-                  userProfile?.first_name ||
-                  user?.user_metadata?.first_name ||
-                  "Utilisateur"
-                }}
+                {{ userFullName || "Utilisateur" }}
                 <span
                   v-if="userProfile?.role"
                   class="text-xs text-gray-500 block"
@@ -146,7 +142,7 @@
                 </Button>
               </NuxtLink>
 
-              <Button @click="handleSignOut" variant="outline" size="sm">
+              <Button @click="signOut" variant="outline" size="sm">
                 <Icon name="lucide:log-out" class="h-4 w-4 mr-2" />
                 <span class="hidden sm:inline">Déconnexion</span>
               </Button>
@@ -231,10 +227,9 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
 
-const { user, isAuthenticated } = useSupabaseUser();
+const { user, userFullName } = useUser();
+const { isAuthenticated, signOut } = useAuth();
 const { userProfile, getRoleLabel } = useUserProfile();
-const toast = useToastStore();
-const supabase = useSupabase();
 
 // État du menu mobile
 const isMobileMenuOpen = ref(false);
@@ -245,20 +240,6 @@ const toggleMobileMenu = () => {
 
 const closeMobileMenu = () => {
   isMobileMenuOpen.value = false;
-};
-
-// Gestion de la déconnexion
-const handleSignOut = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-
-    toast.success("Vous avez été déconnecté avec succès");
-    await navigateTo("/auth/login");
-  } catch (error: any) {
-    console.error("Erreur lors de la déconnexion:", error);
-    toast.error("Erreur lors de la déconnexion: " + error.message);
-  }
 };
 
 // Fermer le menu mobile lors du changement de route

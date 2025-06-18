@@ -60,7 +60,7 @@
             <!-- Note optionnelle -->
             <div>
               <Label for="notes">Notes (optionnel)</Label>
-              <textarea
+              <Textarea
                 id="notes"
                 v-model="formData.notes"
                 rows="3"
@@ -160,6 +160,18 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+
 definePageMeta({
   layout: "dashboard",
   middleware: ["auth", "role"],
@@ -240,8 +252,8 @@ const healthDataTabs = [
 ];
 
 // Composables
-const { user } = useSupabaseUser();
-const supabase = useSupabase();
+const { user, userId } = useUser();
+const supabaseClient = useSupabaseClient();
 const toastStore = useToastStore();
 const { validateHealthData, validateDate } = useHealthValidation();
 
@@ -367,8 +379,8 @@ const handleSubmit = async () => {
     const recordedAt = new Date(
       `${formData.value.date}T${formData.value.time}:00`
     );
-    const { error } = await supabase.from("health_data").insert({
-      user_id: user.value.id,
+    const { error } = await supabaseClient.from("health_data").insert({
+      user_id: userId.value,
       data_type: formData.value.data_type,
       value: formData.value.value,
       unit: formData.value.unit,
@@ -417,10 +429,10 @@ const loadRecentData = async () => {
   if (!user.value) return;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("health_data")
       .select("*")
-      .eq("user_id", user.value.id)
+      .eq("user_id", userId.value)
       .order("recorded_at", { ascending: false })
       .limit(5);
 
@@ -435,10 +447,10 @@ const loadHistoricalData = async () => {
   if (!user.value) return;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("health_data")
       .select("*")
-      .eq("user_id", user.value.id)
+      .eq("user_id", userId.value)
       .order("recorded_at", { ascending: false })
       .limit(100); // Derniers 100 points
 

@@ -240,6 +240,8 @@
 
 <script setup lang="ts">
 import type { ChatMessage } from "~/composables/useHealthChatbot";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 const {
   messages,

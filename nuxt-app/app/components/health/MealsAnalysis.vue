@@ -231,6 +231,9 @@
 </template>
 
 <script setup lang="ts">
+import { Card } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+
 interface MealAnalysis {
   totalMeals: number;
   regularity: number;

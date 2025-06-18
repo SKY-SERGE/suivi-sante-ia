@@ -1,9 +1,10 @@
 <template>
   <aside
-    class="bg-white shadow-sm border-r border-gray-200 h-full"
-    :class="{
-      'w-64': !isCollapsed,
-      'w-16': isCollapsed,
+    class="bg-white shadow-sm border-r border-gray-200 min-h-screen fixed"
+    :style="{
+      width: isCollapsed
+        ? 'var(--sidebar-width-collapsed)'
+        : 'var(--sidebar-width)',
     }"
   >
     <!-- Header de la sidebar -->
@@ -71,7 +72,7 @@
           </li>
           <li>
             <NuxtLink
-              to="/patient/chat"
+              to="/patient/chatbot"
               class="flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors"
               :class="getNavLinkClass('/patient/chat')"
             >
@@ -175,7 +176,7 @@
     </nav>
 
     <!-- Footer de la sidebar -->
-    <div class="absolute bottom-4 left-4 right-4" v-if="!isCollapsed">
+    <div class="absolute bottom-10 left-4 right-4" v-if="!isCollapsed">
       <div class="bg-blue-50 rounded-lg p-3">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -199,7 +200,7 @@ const { userProfile } = useUserProfile();
 const route = useRoute();
 
 // État de collapse de la sidebar
-const isCollapsed = ref(false);
+const isCollapsed = useState("sidebar-collapsed", () => false);
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
@@ -216,16 +217,8 @@ const getNavLinkClass = (path: string) => {
     : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
 };
 
-// Persister l'état de collapse dans le localStorage
-onMounted(() => {
-  const saved = localStorage.getItem("sidebar-collapsed");
-  if (saved !== null) {
-    isCollapsed.value = JSON.parse(saved);
-  }
-});
-
-watch(isCollapsed, (newValue) => {
-  localStorage.setItem("sidebar-collapsed", JSON.stringify(newValue));
+defineExpose({
+  toggleCollapse,
 });
 </script>
 

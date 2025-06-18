@@ -30,7 +30,7 @@ export interface UserPreferences {
 
 export const useRecommendationEngine = () => {
   const { user } = useSupabaseUser();
-  const supabase = useSupabase();
+  const supabaseClient = useSupabaseClient();
 
   // Règles nutritionnelles de base
   const nutritionalRules = ref<NutritionalRule[]>([
@@ -267,7 +267,7 @@ export const useRecommendationEngine = () => {
       return { data: [], error: null };
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("meal_recommendations")
         .insert(
           recommendations.map((rec) => ({

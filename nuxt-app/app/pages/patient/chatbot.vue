@@ -16,48 +16,48 @@
       </p>
     </div>
 
-    <!-- Avertissement important -->
-    <Card class="mb-6 border-amber-200 bg-amber-50">
-      <CardContent class="p-4">
-        <div class="flex items-start space-x-3">
-          <Icon
-            name="lucide:alert-triangle"
-            class="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0"
-          />
-          <div>
-            <h3 class="font-semibold text-amber-900 mb-1">
-              Avertissement médical important
-            </h3>
-            <div class="text-sm text-amber-800 space-y-1">
-              <p>
-                • Ce chatbot fournit uniquement des informations générales sur
-                la santé
-              </p>
-              <p>
-                • Il ne peut pas diagnostiquer, prescrire ou remplacer un avis
-                médical professionnel
-              </p>
-              <p>
-                • En cas d'urgence médicale, contactez immédiatement le 15
-                (SAMU) ou rendez-vous aux urgences
-              </p>
-              <p>
-                • Pour tout problème de santé, consultez votre médecin traitant
-                ou un professionnel qualifié
-              </p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
     <!-- Interface du chatbot -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Chatbot principal -->
-      <div class="lg:col-span-3">
+      <div class="lg:col-span-3 space-y-6">
         <Card>
           <CardContent class="p-0">
             <HealthChatbot />
+          </CardContent>
+        </Card>
+
+        <!-- Avertissement important -->
+        <Card class="mb-6 border-amber-200 bg-amber-50">
+          <CardContent class="p-4">
+            <div class="flex items-start space-x-3">
+              <Icon
+                name="lucide:alert-triangle"
+                class="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0"
+              />
+              <div>
+                <h3 class="font-semibold text-amber-900 mb-1">
+                  Avertissement médical important
+                </h3>
+                <div class="text-sm text-amber-800 space-y-1">
+                  <p>
+                    • Ce chatbot fournit uniquement des informations générales
+                    sur la santé
+                  </p>
+                  <p>
+                    • Il ne peut pas diagnostiquer, prescrire ou remplacer un
+                    avis médical professionnel
+                  </p>
+                  <p>
+                    • En cas d'urgence médicale, contactez immédiatement le 15
+                    (SAMU) ou rendez-vous aux urgences
+                  </p>
+                  <p>
+                    • Pour tout problème de santé, consultez votre médecin
+                    traitant ou un professionnel qualifié
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -197,6 +197,8 @@
 </template>
 
 <script setup lang="ts">
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 // Métadonnées de la page
 definePageMeta({
   layout: "dashboard",

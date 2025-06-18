@@ -6,6 +6,7 @@
 import { logSecurityEvent, getClientIP } from "../utils/security";
 
 export default defineEventHandler(async (event) => {
+  return;
   // Appliquer seulement aux routes API
   if (!event.node.req.url?.startsWith("/api/")) {
     return;

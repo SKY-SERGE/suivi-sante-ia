@@ -324,6 +324,14 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+
 interface Props {
   healthData: Array<{
     id: string;

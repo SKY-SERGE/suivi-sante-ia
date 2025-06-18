@@ -1,303 +1,273 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <NuxtLink to="/dashboard" class="flex items-center">
-              <Icon name="lucide:heart-pulse" class="h-8 w-8 text-blue-600" />
-              <span class="ml-2 text-xl font-bold text-gray-900"
-                >Suivi Santé IA</span
-              >
-            </NuxtLink>
-          </div>
+  <main class="p-6">
+    <div class="space-y-8">
+      <!-- En-tête -->
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Mes Consentements</h1>
+          <p class="mt-2 text-gray-600">
+            Gérez l'accès de vos médecins à vos données de santé.
+          </p>
+        </div>
 
-          <div class="flex items-center space-x-4">
-            <span class="text-gray-700">
-              {{ userProfile?.first_name || "Utilisateur" }}
-              {{ userProfile?.last_name || "" }}
-            </span>
-            <Button @click="handleSignOut" variant="outline">
-              <Icon name="lucide:log-out" class="h-4 w-4 mr-2" />
-              Déconnexion
+        <div class="flex space-x-3">
+          <NuxtLink to="/consents/revoke">
+            <Button
+              variant="outline"
+              class="border-red-300 text-red-600 hover:bg-red-50"
+            >
+              <Icon name="lucide:x-circle" class="h-4 w-4 mr-2" />
+              Révoquer consentements
             </Button>
+          </NuxtLink>
+          <Button
+            @click="showCreateModal = true"
+            class="bg-blue-600 hover:bg-blue-700"
+          >
+            <Icon name="lucide:plus" class="h-4 w-4 mr-2" />
+            Nouveau consentement
+          </Button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div v-if="successMessage" class="rounded-md bg-green-50 p-4">
+        <div class="flex">
+          <Icon name="lucide:check-circle" class="h-5 w-5 text-green-400" />
+          <div class="ml-3">
+            <p class="text-sm font-medium text-green-800">
+              {{ successMessage }}
+            </p>
           </div>
         </div>
       </div>
-    </nav>
 
-    <!-- Contenu principal -->
-    <main class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div class="space-y-8">
-        <!-- En-tête -->
-        <div class="flex justify-between items-center">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">Mes Consentements</h1>
-            <p class="mt-2 text-gray-600">
-              Gérez l'accès de vos médecins à vos données de santé.
-            </p>
-          </div>
-
-          <div class="flex space-x-3">
-            <NuxtLink to="/consents/revoke">
-              <Button
-                variant="outline"
-                class="border-red-300 text-red-600 hover:bg-red-50"
-              >
-                <Icon name="lucide:x-circle" class="h-4 w-4 mr-2" />
-                Révoquer consentements
-              </Button>
-            </NuxtLink>
-            <Button
-              @click="showCreateModal = true"
-              class="bg-blue-600 hover:bg-blue-700"
-            >
-              <Icon name="lucide:plus" class="h-4 w-4 mr-2" />
-              Nouveau consentement
-            </Button>
+      <div v-if="errorMessage" class="rounded-md bg-red-50 p-4">
+        <div class="flex">
+          <Icon name="lucide:alert-circle" class="h-5 w-5 text-red-400" />
+          <div class="ml-3">
+            <p class="text-sm font-medium text-red-800">{{ errorMessage }}</p>
           </div>
         </div>
+      </div>
 
-        <!-- Messages -->
-        <div v-if="successMessage" class="rounded-md bg-green-50 p-4">
-          <div class="flex">
-            <Icon name="lucide:check-circle" class="h-5 w-5 text-green-400" />
-            <div class="ml-3">
-              <p class="text-sm font-medium text-green-800">
-                {{ successMessage }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="errorMessage" class="rounded-md bg-red-50 p-4">
-          <div class="flex">
-            <Icon name="lucide:alert-circle" class="h-5 w-5 text-red-400" />
-            <div class="ml-3">
-              <p class="text-sm font-medium text-red-800">{{ errorMessage }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Statistiques -->
-        <div v-if="stats" class="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardContent class="p-6">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <Icon name="lucide:users" class="h-8 w-8 text-blue-600" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Total
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.total }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent class="p-6">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <Icon name="lucide:clock" class="h-8 w-8 text-yellow-600" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      En attente
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.pending }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent class="p-6">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <Icon name="lucide:check" class="h-8 w-8 text-green-600" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Accordés
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.granted }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent class="p-6">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <Icon name="lucide:x" class="h-8 w-8 text-red-600" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Révoqués
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ stats.revoked }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <!-- Liste des consentements -->
+      <!-- Statistiques -->
+      <div v-if="stats" class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Mes consentements</CardTitle>
-            <CardDescription>
-              Liste de tous vos consentements avec les médecins.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div v-if="isLoading" class="flex justify-center py-8">
-              <Icon
-                name="lucide:loader-2"
-                class="h-8 w-8 animate-spin text-blue-600"
-              />
+          <CardContent class="p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <Icon name="lucide:users" class="h-8 w-8 text-blue-600" />
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">
+                    Total
+                  </dt>
+                  <dd class="text-lg font-medium text-gray-900">
+                    {{ stats.total }}
+                  </dd>
+                </dl>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div
-              v-else-if="!consents || consents.length === 0"
-              class="text-center py-8"
-            >
-              <Icon
-                name="lucide:shield-check"
-                class="h-12 w-12 text-gray-400 mx-auto mb-4"
-              />
-              <p class="text-gray-500">Aucun consentement trouvé.</p>
-              <p class="text-sm text-gray-400 mt-1">
-                Créez votre premier consentement pour permettre à un médecin
-                d'accéder à vos données.
-              </p>
+        <Card>
+          <CardContent class="p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <Icon name="lucide:clock" class="h-8 w-8 text-yellow-600" />
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">
+                    En attente
+                  </dt>
+                  <dd class="text-lg font-medium text-gray-900">
+                    {{ stats.pending }}
+                  </dd>
+                </dl>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div v-else class="space-y-4">
-              <div
-                v-for="consent in consents"
-                :key="consent.id"
-                class="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div class="flex items-center justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center space-x-3">
-                      <div class="flex-shrink-0">
-                        <div
-                          class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center"
-                        >
-                          <Icon
-                            name="lucide:user-md"
-                            class="h-5 w-5 text-blue-600"
-                          />
-                        </div>
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900">
-                          Dr. {{ consent.doctor?.first_name }}
-                          {{ consent.doctor?.last_name }}
-                        </p>
-                        <p class="text-sm text-gray-500">
-                          {{ consent.doctor?.email }}
-                        </p>
-                        <p
-                          v-if="consent.doctor?.specialty"
-                          class="text-xs text-gray-400"
-                        >
-                          {{ consent.doctor.specialty }}
-                        </p>
-                      </div>
-                    </div>
+        <Card>
+          <CardContent class="p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <Icon name="lucide:check" class="h-8 w-8 text-green-600" />
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">
+                    Accordés
+                  </dt>
+                  <dd class="text-lg font-medium text-gray-900">
+                    {{ stats.granted }}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                    <div
-                      class="mt-2 flex items-center space-x-4 text-xs text-gray-500"
-                    >
-                      <span>Créé le {{ formatDate(consent.created_at) }}</span>
-                      <span v-if="consent.granted_at"
-                        >Accordé le {{ formatDate(consent.granted_at) }}</span
-                      >
-                      <span v-if="consent.revoked_at"
-                        >Révoqué le {{ formatDate(consent.revoked_at) }}</span
-                      >
-                      <span v-if="consent.expires_at"
-                        >Expire le {{ formatDate(consent.expires_at) }}</span
-                      >
-                    </div>
-
-                    <p v-if="consent.notes" class="mt-1 text-sm text-gray-600">
-                      {{ consent.notes }}
-                    </p>
-                  </div>
-
-                  <div class="flex items-center space-x-3">
-                    <!-- Badge de statut -->
-                    <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      :class="getStatusBadgeClass(consent.status)"
-                    >
-                      {{ getStatusLabel(consent.status) }}
-                    </span>
-
-                    <!-- Actions -->
-                    <div class="flex space-x-2">
-                      <Button
-                        v-if="consent.status === 'pending'"
-                        @click="approveConsent(consent.id)"
-                        size="sm"
-                        class="bg-green-600 hover:bg-green-700"
-                      >
-                        Approuver
-                      </Button>
-
-                      <Button
-                        v-if="consent.status === 'pending'"
-                        @click="denyConsent(consent.id)"
-                        size="sm"
-                        variant="outline"
-                        class="text-red-600 hover:text-red-700"
-                      >
-                        Refuser
-                      </Button>
-
-                      <Button
-                        v-if="consent.status === 'granted'"
-                        @click="revokeConsent(consent.id)"
-                        size="sm"
-                        variant="outline"
-                        class="text-red-600 hover:text-red-700"
-                      >
-                        Révoquer
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+        <Card>
+          <CardContent class="p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <Icon name="lucide:x" class="h-8 w-8 text-red-600" />
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">
+                    Révoqués
+                  </dt>
+                  <dd class="text-lg font-medium text-gray-900">
+                    {{ stats.revoked }}
+                  </dd>
+                </dl>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-    </main>
+
+      <!-- Liste des consentements -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Mes consentements</CardTitle>
+          <CardDescription>
+            Liste de tous vos consentements avec les médecins.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div v-if="isLoading" class="flex justify-center py-8">
+            <Icon
+              name="lucide:loader-2"
+              class="h-8 w-8 animate-spin text-blue-600"
+            />
+          </div>
+
+          <div
+            v-else-if="!consents || consents.length === 0"
+            class="text-center py-8"
+          >
+            <Icon
+              name="lucide:shield-check"
+              class="h-12 w-12 text-gray-400 mx-auto mb-4"
+            />
+            <p class="text-gray-500">Aucun consentement trouvé.</p>
+            <p class="text-sm text-gray-400 mt-1">
+              Créez votre premier consentement pour permettre à un médecin
+              d'accéder à vos données.
+            </p>
+          </div>
+
+          <div v-else class="space-y-4">
+            <div
+              v-for="consent in consents"
+              :key="consent.id"
+              class="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                      <div
+                        class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center"
+                      >
+                        <Icon
+                          name="lucide:user-md"
+                          class="h-5 w-5 text-blue-600"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900">
+                        Dr. {{ consent.doctor?.first_name }}
+                        {{ consent.doctor?.last_name }}
+                      </p>
+                      <p class="text-sm text-gray-500">
+                        {{ consent.doctor?.email }}
+                      </p>
+                      <p
+                        v-if="consent.doctor?.specialty"
+                        class="text-xs text-gray-400"
+                      >
+                        {{ consent.doctor.specialty }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    class="mt-2 flex items-center space-x-4 text-xs text-gray-500"
+                  >
+                    <span>Créé le {{ formatDate(consent.created_at) }}</span>
+                    <span v-if="consent.granted_at"
+                      >Accordé le {{ formatDate(consent.granted_at) }}</span
+                    >
+                    <span v-if="consent.revoked_at"
+                      >Révoqué le {{ formatDate(consent.revoked_at) }}</span
+                    >
+                    <span v-if="consent.expires_at"
+                      >Expire le {{ formatDate(consent.expires_at) }}</span
+                    >
+                  </div>
+
+                  <p v-if="consent.notes" class="mt-1 text-sm text-gray-600">
+                    {{ consent.notes }}
+                  </p>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                  <!-- Badge de statut -->
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="getStatusBadgeClass(consent.status)"
+                  >
+                    {{ getStatusLabel(consent.status) }}
+                  </span>
+
+                  <!-- Actions -->
+                  <div class="flex space-x-2">
+                    <Button
+                      v-if="consent.status === 'pending'"
+                      @click="approveConsent(consent.id)"
+                      size="sm"
+                      class="bg-green-600 hover:bg-green-700"
+                    >
+                      Approuver
+                    </Button>
+
+                    <Button
+                      v-if="consent.status === 'pending'"
+                      @click="denyConsent(consent.id)"
+                      size="sm"
+                      variant="outline"
+                      class="text-red-600 hover:text-red-700"
+                    >
+                      Refuser
+                    </Button>
+
+                    <Button
+                      v-if="consent.status === 'granted'"
+                      @click="revokeConsent(consent.id)"
+                      size="sm"
+                      variant="outline"
+                      class="text-red-600 hover:text-red-700"
+                    >
+                      Révoquer
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
 
     <!-- Modal de création de consentement -->
     <div
@@ -414,12 +384,19 @@
         </div>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
-import type { Consent } from "~/composables/useConsents";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import type { Consent } from "~/composables/useConsent";
 
 // Middleware et meta
 definePageMeta({
@@ -429,7 +406,7 @@ definePageMeta({
 });
 
 // Composables
-const { userProfile, logout } = useAuth();
+const { userProfile, signOut } = useAuth();
 const {
   getPatientConsents,
   getPatientConsentStats,
@@ -438,7 +415,7 @@ const {
   grantConsent,
   revokeConsent: revokeConsentAPI,
   denyConsent: denyConsentAPI,
-} = useConsents();
+} = useConsent();
 
 // État réactif
 const isLoading = ref(true);
@@ -619,11 +596,6 @@ const getStatusBadgeClass = (status: string) => {
     expired: "bg-gray-100 text-gray-800",
   };
   return classes[status as keyof typeof classes] || "bg-gray-100 text-gray-800";
-};
-
-// Déconnexion
-const handleSignOut = async () => {
-  await logout();
 };
 
 // Initialisation

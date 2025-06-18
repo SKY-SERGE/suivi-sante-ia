@@ -1,151 +1,169 @@
 export type UserRole = "patient" | "doctor" | "admin";
 
-export const useAuth = () => {
-  const { user, isAuthenticated, setUser } = useSupabaseUser();
-  const { userProfile, loadUserProfile: loadProfile } = useUserProfile();
+interface AuthState {
+  isLoading: boolean;
+  error: string | null;
+}
 
-  // Ref computed pour le rôle utilisateur
-  const userRole = computed<UserRole | null>(() => {
-    return (userProfile.value?.role as UserRole) || null;
+// Configuration des timeouts
+const AUTH_CONFIG = {
+  MAX_AUTH_ATTEMPTS: 50,
+  MAX_PROFILE_ATTEMPTS: 30,
+  RETRY_DELAY: 100,
+  isDev: process.env.NODE_ENV === "development",
+} as const;
+
+export const useAuth = () => {
+  const supabaseClient = useSupabaseClient();
+  const { userProfile, loadUserProfile, userRole } = useUserProfile();
+  const user = useSupabaseUser();
+
+  // État de chargement
+  const authState = ref<AuthState>({
+    isLoading: false,
+    error: null,
   });
 
-  // Charger le profil utilisateur avec son rôle
-  const loadUserProfile = async () => {
-    if (!user.value) return null;
-    await loadProfile();
-    return { data: userProfile.value, error: null };
-  };
-
-  // Vérifier si l'utilisateur a un rôle spécifique
-  const hasRole = (role: UserRole): boolean => {
-    return userRole.value === role;
-  };
-
-  // Vérifier si l'utilisateur a l'un des rôles spécifiés
-  const hasAnyRole = (roles: UserRole[]): boolean => {
-    return userRole.value ? roles.includes(userRole.value) : false;
-  };
-
-  // Vérifier si l'utilisateur est un patient
-  const isPatient = computed(() => hasRole("patient"));
-
-  // Vérifier si l'utilisateur est un médecin
-  const isDoctor = computed(() => hasRole("doctor"));
-
-  // Vérifier si l'utilisateur est un administrateur
-  const isAdmin = computed(() => hasRole("admin")); // Rediriger vers la page appropriée selon le rôle
-  const redirectToDashboard = async () => {
-    console.log("Début de redirectToDashboard");
-    console.log("isAuthenticated:", isAuthenticated.value);
-    console.log("user:", user.value?.email);
-    console.log("userRole:", userRole.value);
-
-    // Attendre un maximum de 5 secondes que l'utilisateur soit authentifié
-    let attempts = 0;
-    const maxAttempts = 50; // 5 secondes avec 100ms d'intervalle
-
-    while (!isAuthenticated.value && attempts < maxAttempts) {
-      console.log(
-        `Attente authentification... tentative ${attempts + 1}/${maxAttempts}`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      attempts++;
-    }
-
-    // S'assurer que l'utilisateur est connecté
-    if (!isAuthenticated.value || !user.value) {
-      console.warn(
-        "Tentative de redirection sans utilisateur authentifié après délai d'attente"
-      );
-      await navigateTo("/auth/login");
-      return;
-    }
-
-    console.log("Utilisateur authentifié confirmé, chargement du profil...");
-
-    // Si le profil n'est pas encore chargé, le charger et attendre
-    if (!userRole.value) {
-      console.log("Profil non trouvé, chargement en cours...");
-      await loadUserProfile();
-
-      // Attendre un peu que le profil soit chargé
-      let profileAttempts = 0;
-      const maxProfileAttempts = 30; // 3 secondes
-
-      while (!userRole.value && profileAttempts < maxProfileAttempts) {
-        console.log(
-          `Attente profil... tentative ${
-            profileAttempts + 1
-          }/${maxProfileAttempts}`
-        );
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        profileAttempts++;
-      }
-    }
-
-    console.log("Rôle final après chargement:", userRole.value);
-
-    // Si après le chargement du profil on n'a toujours pas de rôle, rediriger vers le profil
-    if (!userRole.value) {
-      console.warn(
-        "Aucun rôle trouvé pour l'utilisateur, redirection vers le profil"
-      );
-      await navigateTo("/profile");
-      return;
-    }
-
-    console.log("Redirection vers le dashboard pour le rôle:", userRole.value);
-
-    // Rediriger selon le rôle
-    switch (userRole.value) {
-      case "admin":
-        await navigateTo("/admin/dashboard");
-        break;
-      case "doctor":
-        await navigateTo("/doctor/dashboard");
-        break;
-      case "patient":
-      default:
-        await navigateTo("/espace");
-        break;
-    }
-  };
+  const isAuthenticated = computed(() => !!user.value);
 
   // Vérifier l'accès à une ressource
   const canAccess = (requiredRoles: UserRole[]): boolean => {
     if (!isAuthenticated.value || !userRole.value) return false;
     return requiredRoles.includes(userRole.value);
   };
-  const signIn = async (
-    email: string,
-    password: string,
-    role: UserRole = "patient"
-  ) => {
+
+  // Fonction utilitaire pour les retry avec timeout
+  const waitForCondition = async (
+    condition: () => boolean,
+    maxAttempts: number,
+    delay: number = AUTH_CONFIG.RETRY_DELAY,
+    description: string = ""
+  ): Promise<boolean> => {
+    let attempts = 0;
+
+    while (!condition() && attempts < maxAttempts) {
+      if (AUTH_CONFIG.isDev && description) {
+        console.log(
+          `Attente ${description}... tentative ${attempts + 1}/${maxAttempts}`
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      attempts++;
+    }
+
+    return condition();
+  };
+
+  // Logger conditionnel
+  const log = (message: string, ...args: any[]) => {
+    if (AUTH_CONFIG.isDev) {
+      console.log(message, ...args);
+    }
+  };
+
+  // Redirection simplifiée vers le dashboard
+  const redirectToDashboard = async () => {
     try {
-      const supabase = useSupabase();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      authState.value.isLoading = true;
+      authState.value.error = null;
 
-      if (data.user && !error) {
-        setUser(data.user);
+      log("Début de redirectToDashboard");
+      log("isAuthenticated:", isAuthenticated.value);
+      log("user:", user.value);
 
-        // Attendre que l'état d'authentification soit mis à jour
-        await nextTick();
+      // Attendre l'authentification
+      const isAuthSuccess = await waitForCondition(
+        () => isAuthenticated.value && !!user.value,
+        AUTH_CONFIG.MAX_AUTH_ATTEMPTS,
+        AUTH_CONFIG.RETRY_DELAY,
+        "authentification"
+      );
 
-        // Attendre que le profil soit chargé
-        await loadUserProfile();
-
-        console.log("Utilisateur connecté:", data.user.email);
-        console.log("État d'authentification:", isAuthenticated.value);
-        console.log("Profil utilisateur:", userProfile.value);
+      if (!isAuthSuccess) {
+        log("Timeout d'authentification, redirection vers login");
+        await navigateTo("/auth/login");
+        return;
       }
 
-      return { data, error };
+      log("Utilisateur authentifié confirmé, chargement du profil...");
+
+      // Charger le profil si nécessaire
+      if (!userRole.value) {
+        log("Profil non trouvé, chargement en cours...");
+        await loadUserProfile();
+
+        // Attendre que le profil soit chargé
+        const isProfileSuccess = await waitForCondition(
+          () => !!userRole.value,
+          AUTH_CONFIG.MAX_PROFILE_ATTEMPTS,
+          AUTH_CONFIG.RETRY_DELAY,
+          "profil"
+        );
+
+        if (!isProfileSuccess) {
+          log("Aucun rôle trouvé après timeout, redirection vers profil");
+          await navigateTo("/profile");
+          return;
+        }
+      }
+
+      log("Redirection vers le dashboard pour le rôle:", userRole.value);
+
+      // Rediriger selon le rôle
+      const dashboardRoutes: Record<UserRole, string> = {
+        admin: "/admin/dashboard",
+        doctor: "/doctor/dashboard",
+        patient: "/patient/dashboard",
+      };
+
+      const route = dashboardRoutes[userRole.value!] || "/dashboard";
+      await navigateTo(route);
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la redirection";
+      authState.value.error = errorMessage;
+      console.error("Erreur dans redirectToDashboard:", error);
+    } finally {
+      authState.value.isLoading = false;
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      authState.value.isLoading = true;
+      authState.value.error = null;
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          // @ts-expect-error - Supabase types are not fully compatible with Nuxt
+          emailRedirectTo: "http://localhost:3000/auth/confirm",
+        },
+      });
+
+      if (error) {
+        authState.value.error = error.message;
+        return { data: null, error };
+      }
+
+      if (data.user) {
+        await nextTick();
+        await loadUserProfile();
+        log("Utilisateur connecté:", data.user.email);
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors de la connexion";
+      authState.value.error = errorMessage;
       console.error("Erreur lors de la connexion:", error);
-      return { data: null, error };
+      return { data: null, error: errorMessage };
+    } finally {
+      authState.value.isLoading = false;
     }
   };
 
@@ -154,16 +172,24 @@ export const useAuth = () => {
     password: string,
     metadata?: Record<string, any>
   ) => {
+    authState.value.isLoading = true;
+    authState.value.error = null;
     try {
-      const supabase = useSupabase();
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
         },
-      }); // Si l'inscription réussit et que nous avons des métadonnées, créer le profil
-      if (data.user && !error && metadata) {
+      });
+
+      if (error) {
+        authState.value.error = error.message;
+        return { data: null, error };
+      }
+
+      // Créer le profil si l'inscription réussit
+      if (data.user && metadata) {
         const { createProfile } = useUserProfile();
         await createProfile(data.user.id, {
           email,
@@ -171,50 +197,62 @@ export const useAuth = () => {
         });
       }
 
-      return { data, error };
+      return { data, error: null };
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors de l'inscription";
+      authState.value.error = errorMessage;
       console.error("Erreur lors de l'inscription:", error);
-      return { data: null, error };
+      return { data: null, error: errorMessage };
+    } finally {
+      authState.value.isLoading = false;
     }
   };
 
   const signOut = async () => {
+    authState.value.isLoading = true;
+    authState.value.error = null;
     try {
-      const supabase = useSupabase();
-      const { error } = await supabase.auth.signOut();
-      if (!error) {
-        setUser(null);
-        await navigateTo("/auth/login");
+      const { error } = await supabaseClient.auth.signOut();
+
+      if (error) {
+        authState.value.error = error.message;
+        return { error };
       }
-      return { error };
+      // automatically redirect to login after sign out
+      return { error: null };
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la déconnexion";
+      authState.value.error = errorMessage;
       console.error("Erreur lors de la déconnexion:", error);
-      return { error };
+      return { error: errorMessage };
+    } finally {
+      authState.value.isLoading = false;
     }
   };
 
-  // Déconnexion sécurisée
-  const logout = async () => {
-    await signOut();
-    // Les valeurs userProfile et userRole seront automatiquement réinitialisées
-    // par les watchers dans useUserProfile quand user devient null
+  // Réinitialiser les erreurs
+  const clearError = () => {
+    authState.value.error = null;
   };
 
   return {
-    user: readonly(user),
+    // État
     userProfile: readonly(userProfile),
-    userRole: readonly(userRole),
-    isAuthenticated,
-    isPatient,
-    isDoctor,
-    isAdmin,
+    isAuthenticated: readonly(isAuthenticated),
+    isLoading: readonly(computed(() => authState.value.isLoading)),
+    error: readonly(computed(() => authState.value.error)),
+
+    // Méthodes
     loadUserProfile,
-    hasRole,
-    hasAnyRole,
     canAccess,
     redirectToDashboard,
     signIn,
     signUp,
-    logout,
+    signOut,
+    clearError,
   };
 };

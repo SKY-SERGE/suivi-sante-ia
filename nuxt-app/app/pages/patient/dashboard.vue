@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto p-6">
     <!-- Skip link for accessibility -->
-    <SkipLink href="#main-content" />
+    <UiSkipLink href="#main-content" />
 
     <!-- En-tête de la page avec structure sémantique -->
     <header class="mb-8">
@@ -229,6 +229,9 @@
 
 <script setup lang="ts">
 import type { Database } from "~/types/database";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { Dialog } from "~/components/ui/dialog";
 
 // Types
 type HealthData = Database["public"]["Tables"]["health_data"]["Row"];
@@ -243,8 +246,8 @@ definePageMeta({
 });
 
 // Composables
-const { $supabase } = useNuxtApp();
-const { user } = useSupabaseUser();
+const supabaseClient = useSupabaseClient();
+const { user } = useUser();
 
 // États réactifs
 const pending = ref(true);
@@ -264,12 +267,13 @@ const loadData = async () => {
     }
 
     // Charger les données de santé
-    const { data: healthDataResponse, error: healthError } = await $supabase
-      .from("health_data")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", { ascending: false })
-      .limit(100);
+    const { data: healthDataResponse, error: healthError } =
+      await supabaseClient
+        .from("health_data")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
 
     if (healthError) {
       throw new Error(
@@ -278,7 +282,7 @@ const loadData = async () => {
     }
 
     // Charger les objectifs
-    const { data: goalsResponse, error: goalsError } = await $supabase
+    const { data: goalsResponse, error: goalsError } = await supabaseClient
       .from("health_goals")
       .select("*")
       .eq("user_id", currentUser.id)
@@ -306,21 +310,24 @@ const refresh = () => {
   loadData();
 };
 
+const refreshInterval = ref<NodeJS.Timeout | null>(null);
+
 // Chargement initial
 onMounted(() => {
   loadData();
+  // Actualisation automatique périodique (optionnelle)
+  refreshInterval.value = setInterval(() => {
+    if (!pending.value) {
+      loadData();
+    }
+  }, 5 * 60 * 1000); // Actualise toutes les 5 minutes
 });
-
-// Actualisation automatique périodique (optionnelle)
-const refreshInterval = setInterval(() => {
-  if (!pending.value) {
-    loadData();
-  }
-}, 5 * 60 * 1000); // Actualise toutes les 5 minutes
 
 // Nettoyage de l'intervalle
 onUnmounted(() => {
-  clearInterval(refreshInterval);
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value);
+  }
 });
 
 // Meta informations pour la page

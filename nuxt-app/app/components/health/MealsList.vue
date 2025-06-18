@@ -175,6 +175,9 @@
 </template>
 
 <script setup lang="ts">
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
 interface FoodItem {
   name: string;
   quantity?: string;

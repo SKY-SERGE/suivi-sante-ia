@@ -175,10 +175,12 @@
             Enregistrez manuellement les détails de votre repas
           </DialogDescription>
         </DialogHeader>
-        <ManualMealForm
-          @save="handleMealSave"
-          @cancel="showAddMealDialog = false"
-        />
+        <div class="p-6">
+          <ManualMealForm
+            @save="handleMealSave"
+            @cancel="showAddMealDialog = false"
+          />
+        </div>
       </DialogContent>
     </Dialog>
 
@@ -192,16 +194,35 @@
             automatique
           </DialogDescription>
         </DialogHeader>
-        <PhotoMealForm
-          @mealSaved="handlePhotoMealSaved"
-          @cancel="showPhotoDialog = false"
-        />
+        <div class="p-6">
+          <PhotoMealForm
+            @mealSaved="handlePhotoMealSaved"
+            @cancel="showPhotoDialog = false"
+          />
+        </div>
       </DialogContent>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import ManualMealForm from "@/components/health/ManualMealForm.vue";
+import PhotoMealForm from "@/components/health/PhotoMealForm.vue";
+import MealsList from "@/components/health/MealsList.vue";
+import MealsAnalysis from "@/components/health/MealsAnalysis.vue";
+import RecommendationsList from "@/components/health/RecommendationsList.vue";
+import RecommendationMetrics from "@/components/health/RecommendationMetrics.vue";
+import RecommendationTestPanel from "@/components/health/RecommendationTestPanel.vue";
+import { Button } from "@/components/ui/button";
+
 definePageMeta({
   middleware: ["auth", "role"],
   requiredRole: "patient",
@@ -224,7 +245,7 @@ const {
   getPersonalizedRecommendations,
 } = useMeals();
 
-const { user } = useSupabaseUser();
+const { user, userId } = useUser();
 const { showToast } = useToast();
 
 // Configuration pour l'environnement de développement
@@ -468,12 +489,12 @@ const handleGenerateRecommendations = async () => {
           priority: "low",
         },
       ]; // Créer les recommandations via l'API
-      const supabase = useSupabase();
-      const { data, error: insertError } = await supabase
+      const supabaseClient = useSupabaseClient();
+      const { data, error: insertError } = await supabaseClient
         .from("meal_recommendations")
         .insert(
           testRecommendations.map((rec) => ({
-            user_id: user.value?.id,
+            user_id: userId.value,
             category: rec.category,
             title: rec.title,
             description: rec.description,

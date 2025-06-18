@@ -149,13 +149,10 @@ const form = useForm({
 });
 
 // États réactifs
-const isLoading = ref(false);
-const { signUp } = useAuth();
+const { signUp, isLoading } = useAuth();
 
 // Gestion de la soumission
 const onSubmit = form.handleSubmit(async (values) => {
-  isLoading.value = true;
-
   try {
     const { data, error } = await signUp(values.email, values.password, {
       first_name: values.firstName,
@@ -177,8 +174,6 @@ const onSubmit = form.handleSubmit(async (values) => {
   } catch (error: any) {
     console.error("Erreur lors de l'inscription:", error);
     alert(error?.message || "Une erreur est survenue lors de l'inscription");
-  } finally {
-    isLoading.value = false;
   }
 });
 

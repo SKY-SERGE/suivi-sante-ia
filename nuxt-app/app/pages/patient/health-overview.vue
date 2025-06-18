@@ -256,6 +256,15 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
 definePageMeta({
   layout: "dashboard",
   middleware: ["auth", "role"],
@@ -275,8 +284,8 @@ interface HealthDataItem {
 const healthData = ref<HealthDataItem[]>([]);
 
 // Composables
-const { user } = useSupabaseUser();
-const supabase = useSupabase();
+const { user } = useUser();
+const supabaseClient = useSupabaseClient();
 
 // Computed pour les différents types de données
 const moodData = computed(
@@ -431,7 +440,7 @@ const loadHealthData = async () => {
   if (!user.value) return;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", user.value.id)
