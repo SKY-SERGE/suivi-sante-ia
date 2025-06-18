@@ -1108,8 +1108,8 @@ interface AIAnalysis {
 }
 
 // Composables
-const { user, userProfile, loadUserProfile, logout } = useAuth();
-const supabase = useSupabase();
+const { user } = useUser();
+const supabaseClient = useSupabaseClient();
 const route = useRoute();
 const { showToast } = useToast();
 
@@ -1180,7 +1180,7 @@ const loadPatientData = async () => {
 
   try {
     // Vérifier le consentement et charger les infos patient
-    const { data: consentData, error: consentError } = await supabase
+    const { data: consentData, error: consentError } = await supabaseClient
       .from("consents")
       .select(
         `
@@ -1224,7 +1224,7 @@ const loadHealthData = async () => {
 
   try {
     // Charger les signes vitaux récents
-    const { data: vitalsData } = await supabase
+    const { data: vitalsData } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1243,7 +1243,7 @@ const loadHealthData = async () => {
     }
 
     // Charger les données pour les graphiques
-    const { data: chartVitals } = await supabase
+    const { data: chartVitals } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1251,7 +1251,7 @@ const loadHealthData = async () => {
       .order("recorded_at", { ascending: true })
       .limit(30);
 
-    const { data: chartMood } = await supabase
+    const { data: chartMood } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1259,7 +1259,7 @@ const loadHealthData = async () => {
       .order("recorded_at", { ascending: true })
       .limit(30);
 
-    const { data: chartActivity } = await supabase
+    const { data: chartActivity } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1274,7 +1274,7 @@ const loadHealthData = async () => {
     };
 
     // Charger les objectifs
-    const { data: goalsData } = await supabase
+    const { data: goalsData } = await supabaseClient
       .from("health_goals")
       .select("*")
       .eq("user_id", patientId)
@@ -1283,7 +1283,7 @@ const loadHealthData = async () => {
     patientGoals.value = goalsData || [];
 
     // Charger l'historique des événements
-    const { data: eventsData } = await supabase
+    const { data: eventsData } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1293,7 +1293,7 @@ const loadHealthData = async () => {
     healthEvents.value = eventsData || [];
 
     // Charger les symptômes récents
-    const { data: symptomsData } = await supabase
+    const { data: symptomsData } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1345,8 +1345,8 @@ const loadPatientSummary = async () => {
     };
 
     // TODO: Remplacer par de vraies requêtes à la base de données
-    // const { data: allergiesData } = await supabase.from('patient_allergies')...
-    // const { data: historyData } = await supabase.from('medical_history')...
+    // const { data: allergiesData } = await supabaseClient.from('patient_allergies')...
+    // const { data: historyData } = await supabaseClient.from('medical_history')...
     // etc.
   } catch (error) {
     console.error("Erreur lors du chargement du résumé patient:", error);
@@ -1626,7 +1626,7 @@ const loadDetailedChartData = async () => {
   chartLoading.value = true;
 
   try {
-    const { data: chartData } = await supabase
+    const { data: chartData } = await supabaseClient
       .from("health_data")
       .select("*")
       .eq("user_id", patientId)
@@ -1828,7 +1828,6 @@ const rateAnalysis = (rating: number) => {
 
 // Initialisation
 onMounted(async () => {
-  await loadUserProfile();
   await loadPatientData();
 
   // Charger les données détaillées si consentement accordé

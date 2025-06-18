@@ -559,8 +559,8 @@ const pending = ref(true);
 const error = ref<string | null>(null);
 
 // Composables
-const { $supabase } = useNuxtApp();
-const { user } = useSupabaseUser();
+const supabaseClient = useSupabaseClient();
+const { user } = useUser();
 const toast = useToastStore();
 const { sendSecureMessage, validateMessageContent, validateSubject } =
   useSecureMessaging();
@@ -601,7 +601,7 @@ async function loadConversations() {
     pending.value = true;
     error.value = null;
 
-    const { data, error: fetchError } = await $supabase
+    const { data, error: fetchError } = await supabaseClient
       .from("secure_messages")
       .select(
         `
@@ -655,7 +655,7 @@ async function loadConversations() {
 
 async function loadConsentedPatients() {
   try {
-    const { data, error: fetchError } = await $supabase
+    const { data, error: fetchError } = await supabaseClient
       .from("patient_doctor_consents")
       .select(
         `
@@ -691,7 +691,7 @@ async function selectConversation(conversation: any) {
   selectedConversation.value = conversation;
 
   try {
-    const { data, error: fetchError } = await $supabase
+    const { data, error: fetchError } = await supabaseClient
       .from("secure_messages")
       .select("*")
       .or(
@@ -708,7 +708,7 @@ async function selectConversation(conversation: any) {
 
     // Marquer comme lu
     if (!conversation.is_read && conversation.sender_role !== "doctor") {
-      await $supabase
+      await supabaseClient
         .from("secure_messages")
         .update({ is_read: true })
         .eq("id", conversation.id);
@@ -834,7 +834,7 @@ async function archiveConversation() {
   if (!selectedConversation.value) return;
 
   try {
-    const { error: updateError } = await $supabase
+    const { error: updateError } = await supabaseClient
       .from("secure_messages")
       .update({ is_archived: true })
       .eq("id", selectedConversation.value.id);
@@ -856,7 +856,7 @@ async function markAsUrgent() {
   try {
     const newUrgentStatus = !selectedConversation.value.is_urgent;
 
-    const { error: updateError } = await $supabase
+    const { error: updateError } = await supabaseClient
       .from("secure_messages")
       .update({ is_urgent: newUrgentStatus })
       .eq("id", selectedConversation.value.id);

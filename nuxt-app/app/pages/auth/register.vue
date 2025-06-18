@@ -171,7 +171,7 @@ const formSchema = toTypedSchema(
         .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
       confirmPassword: z.string().min(6, "Confirmation requise"),
       role: z
-        .enum(["patient", "doctor"], {
+        .enum(["patient", "doctor", "admin"], {
           required_error: "Veuillez sélectionner un rôle",
         })
         .optional(),

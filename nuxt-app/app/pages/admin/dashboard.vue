@@ -427,6 +427,11 @@
           {{ confirmAction.message }}
         </DialogDescription>
       </DialogHeader>
+      <div>
+        <p class="text-sm text-gray-500">
+          Cette action est irréversible. Êtes-vous sûr de vouloir continuer ?
+        </p>
+      </div>
       <DialogFooter>
         <Button variant="outline" @click="confirmDialogOpen = false">
           Annuler
@@ -496,8 +501,8 @@ interface ConfirmAction {
 }
 
 // Composables
-const { user, userProfile, loadUserProfile, logout } = useAuth();
-const supabase = useSupabase();
+const { user } = useUser();
+const supabaseClient = useSupabaseClient();
 const { showToast } = useToast();
 
 // États réactifs
@@ -639,7 +644,7 @@ const bulkDeactivate = async () => {
 
 const bulkUpdateStatus = async (isActive: boolean) => {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from("users")
       .update({
         is_active: isActive,
@@ -714,7 +719,7 @@ const saveUser = async () => {
   try {
     if (editingUser.value) {
       // Mise à jour
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from("users")
         .update({
           first_name: userForm.value.first_name,
@@ -749,7 +754,7 @@ const saveUser = async () => {
         throw error;
       }
     } else {
-      // Création - ici on devrait utiliser l'API d'authentification Supabase
+      // Création - ici on devrait utiliser l'API d'authentification supabaseClient
       showToast({
         title: "Information",
         description:
@@ -781,7 +786,7 @@ const loadAdminData = async () => {
 
   try {
     // Charger tous les utilisateurs
-    const { data: allUsers, error: usersError } = await supabase
+    const { data: allUsers, error: usersError } = await supabaseClient
       .from("users")
       .select("*")
       .order("created_at", { ascending: false });
@@ -796,7 +801,7 @@ const loadAdminData = async () => {
     }
 
     // Charger les consentements actifs
-    const { data: consents, error: consentsError } = await supabase
+    const { data: consents, error: consentsError } = await supabaseClient
       .from("consents")
       .select("*")
       .eq("status", "granted");
@@ -825,7 +830,7 @@ const refreshUsers = async () => {
 // Basculer le statut d'un utilisateur
 const toggleUserStatus = async (targetUser: User) => {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from("users")
       .update({
         is_active: !targetUser.is_active,
@@ -866,7 +871,6 @@ watch([searchQuery, selectedRole, selectedStatus], () => {
 
 // Initialisation
 onMounted(async () => {
-  await loadUserProfile();
   await loadAdminData();
 });
 

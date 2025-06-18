@@ -1,30 +1,5 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <Icon name="lucide:heart-pulse" class="h-8 w-8 text-blue-600" />
-            <span class="ml-2 text-xl font-bold text-gray-900"
-              >Suivi Santé IA</span
-            >
-          </div>
-
-          <div class="flex items-center space-x-4">
-            <span class="text-gray-700">
-              Dr. {{ userProfile?.first_name || "Médecin" }}
-              {{ userProfile?.last_name || "" }}
-            </span>
-            <Button @click="handleSignOut" variant="outline">
-              <Icon name="lucide:log-out" class="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
-      </div>
-    </nav>
-
     <!-- Contenu principal -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0">
@@ -384,8 +359,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 // Composables
-const { user, userProfile, loadUserProfile, logout } = useAuth();
-const supabase = useSupabase();
+const { user, userProfile } = useUser();
+const supabaseClient = useSupabaseClient();
 
 // Types
 interface Patient {
@@ -470,7 +445,7 @@ const loadDoctorData = async () => {
 
   try {
     // Charger tous les patients avec leurs consentements
-    const { data: consents, error: consentsError } = await supabase
+    const { data: consents, error: consentsError } = await supabaseClient
       .from("consents")
       .select(
         `
@@ -598,14 +573,8 @@ const showPatientMenu = (patient: Patient) => {
   console.log("Menu pour patient:", patient);
 };
 
-// Gestion de la déconnexion
-const handleSignOut = async () => {
-  await logout();
-};
-
 // Initialisation
 onMounted(async () => {
-  await loadUserProfile();
   await loadDoctorData();
 });
 
