@@ -138,10 +138,6 @@ export const useAuth = () => {
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
-        options: {
-          // @ts-expect-error - Supabase types are not fully compatible with Nuxt
-          emailRedirectTo: "http://localhost:3000/auth/confirm",
-        },
       });
 
       if (error) {
@@ -180,6 +176,7 @@ export const useAuth = () => {
         password,
         options: {
           data: metadata,
+          emailRedirectTo: "http://localhost:3000/auth/confirm",
         },
       });
 

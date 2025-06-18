@@ -79,6 +79,27 @@
           </FormItem>
         </FormField>
 
+        <FormField v-slot="{ componentField }" name="role">
+          <FormItem>
+            <FormLabel for="role-select">Type de compte *</FormLabel>
+            <FormControl>
+              <select
+                v-bind="componentField"
+                id="role-select"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-describedby="role-error"
+                required
+              >
+                <option value="">Sélectionnez votre rôle</option>
+                <option value="patient">Patient</option>
+                <option value="doctor">Médecin</option>
+                <option value="admin">Administrateur</option>
+              </select>
+            </FormControl>
+            <FormMessage id="role-error" role="alert" aria-live="polite" />
+          </FormItem>
+        </FormField>
+
         <Button type="submit" class="w-full" :disabled="isLoading">
           <Icon
             v-if="isLoading"
@@ -123,6 +144,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
+// Meta données de la page
+definePageMeta({
+  layout: "auth",
+  middleware: "guest",
+});
+
+// Configuration SEO
+useSeoMeta({
+  title: "Inscription",
+  description:
+    "Créez un compte Suivi Santé IA pour accéder à votre espace personnalisé de suivi de santé.",
+});
+
 // Schéma de validation
 const formSchema = toTypedSchema(
   z
@@ -136,6 +170,11 @@ const formSchema = toTypedSchema(
         .string()
         .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
       confirmPassword: z.string().min(6, "Confirmation requise"),
+      role: z
+        .enum(["patient", "doctor"], {
+          required_error: "Veuillez sélectionner un rôle",
+        })
+        .optional(),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: "Les mots de passe ne correspondent pas",
@@ -157,7 +196,7 @@ const onSubmit = form.handleSubmit(async (values) => {
     const { data, error } = await signUp(values.email, values.password, {
       first_name: values.firstName,
       last_name: values.lastName,
-      role: "patient", // Par défaut, rôle patient
+      role: values.role || "patient", // Par défaut, rôle patient
     });
     if (error) {
       console.error("Erreur d'inscription:", error);
@@ -175,12 +214,5 @@ const onSubmit = form.handleSubmit(async (values) => {
     console.error("Erreur lors de l'inscription:", error);
     alert(error?.message || "Une erreur est survenue lors de l'inscription");
   }
-});
-
-// Meta données de la page
-definePageMeta({
-  layout: "auth",
-  title: "Inscription",
-  middleware: "guest",
 });
 </script>
