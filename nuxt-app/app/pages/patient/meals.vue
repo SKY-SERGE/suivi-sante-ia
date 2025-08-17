@@ -3,7 +3,7 @@
     <div class="max-w-6xl mx-auto space-y-6">
       <!-- En-tête -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between">
+        <div class="lg:flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold text-gray-900">
               Journal Alimentaire
@@ -168,7 +168,9 @@
 
     <!-- Dialog d'ajout de repas manuel -->
     <Dialog v-model:open="showAddMealDialog">
-      <DialogContent class="max-w-2xl">
+      <DialogContent
+        class="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]"
+      >
         <DialogHeader>
           <DialogTitle>Ajouter un repas</DialogTitle>
           <DialogDescription>
@@ -177,7 +179,7 @@
         </DialogHeader>
         <div class="p-6">
           <ManualMealForm
-            @save="handleMealSave"
+            @saved="handleMealSaved"
             @cancel="showAddMealDialog = false"
           />
         </div>
@@ -186,7 +188,9 @@
 
     <!-- Dialog de photo de repas -->
     <Dialog v-model:open="showPhotoDialog">
-      <DialogContent class="max-w-2xl">
+      <DialogContent
+        class="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]"
+      >
         <DialogHeader>
           <DialogTitle>Analyser une photo de repas</DialogTitle>
           <DialogDescription>
@@ -236,7 +240,6 @@ const {
   isLoading,
   error,
   loadMeals,
-  saveMealWithRecommendations,
   saveMealWithPhoto,
   updateMeal,
   deleteMeal,
@@ -267,49 +270,9 @@ const tabs = [
 ];
 
 // Méthodes
-const handleMealSave = async (mealData: any) => {
-  try {
-    const {
-      data,
-      error: saveError,
-      recommendations: newRecommendations,
-    } = await saveMealWithRecommendations({
-      type: mealData.mealType,
-      datetime: mealData.mealTime,
-      foods: mealData.foods,
-      notes: mealData.notes,
-      satisfaction: mealData.satisfaction,
-      hunger_level: mealData.hungerLevel,
-    });
-
-    if (saveError) {
-      showToast({
-        title: "Erreur lors de la sauvegarde",
-        variant: "error",
-      });
-      return;
-    }
-
-    showToast({
-      title: "Repas enregistré avec succès",
-      variant: "success",
-    });
-
-    if (newRecommendations && newRecommendations.length > 0) {
-      showToast({
-        title: `${newRecommendations.length} nouvelles recommandations générées`,
-        variant: "warning",
-      });
-    }
-
-    showAddMealDialog.value = false;
-  } catch (error) {
-    console.error("Erreur lors de la sauvegarde:", error);
-    showToast({
-      title: "Erreur lors de la sauvegarde",
-      variant: "error",
-    });
-  }
+const handleMealSaved = async () => {
+  showAddMealDialog.value = false;
+  await loadMeals();
 };
 
 const handlePhotoMealSaved = async (data: any) => {

@@ -1,6 +1,6 @@
 <template>
   <slot />
-  <Toaster position="bottom-right" />
+  <Toaster />
 </template>
 
 <script setup lang="ts">

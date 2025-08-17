@@ -24,6 +24,9 @@ export default defineNuxtConfig({
       appName: process.env.NUXT_PUBLIC_APP_NAME || "Suivi Santé IA",
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY,
+      visionAiBaseUrl:
+        process.env.NUXT_PUBLIC_VISION_AI_BASE_URL ||
+        "https://api.visionai.com",
       // Suppression des indicateurs d'API pour éviter l'exposition d'informations sensibles
       // Les fonctionnalités seront détectées côté serveur uniquement
     },
@@ -44,7 +47,7 @@ export default defineNuxtConfig({
         {
           "http-equiv": "Content-Security-Policy",
           content:
-            "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://vision.googleapis.com https://generativelanguage.googleapis.com; frame-ancestors 'none';",
+            "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://vision.googleapis.com https://generativelanguage.googleapis.com https://*.ngrok-free.app; frame-ancestors 'none';",
         },
         // Headers de sécurité additionnels
         { "http-equiv": "X-Content-Type-Options", content: "nosniff" },

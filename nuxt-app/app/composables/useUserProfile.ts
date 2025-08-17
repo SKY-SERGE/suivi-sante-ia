@@ -86,7 +86,7 @@ export const useUserProfile = () => {
         globalUserProfile.value = null;
       } else {
         globalUserProfile.value = data;
-        console.log("Profil chargé:", data);
+        console.log("Profil chargé:", data?.email);
       }
     } catch (err: any) {
       console.error("Erreur lors du chargement du profil:", err);

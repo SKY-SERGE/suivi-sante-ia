@@ -111,6 +111,12 @@
       </div>
     </div>
 
+    <!-- Photo du repas -->
+    <div class="space-y-2">
+      <Label>Photo du repas (optionnel)</Label>
+      <PhotoUploader v-model:file="form.photo" />
+    </div>
+
     <!-- Notes supplémentaires -->
     <div class="space-y-2">
       <Label for="notes">Notes (optionnel)</Label>
@@ -195,13 +201,19 @@ interface MealForm {
   notes: string;
   satisfaction: string;
   hungerLevel: string;
+  photo?: File | null;
 }
 
 // Props et émissions
-defineEmits<{
+const emit = defineEmits<{
   save: [data: MealForm];
+  saved: [];
   cancel: [];
 }>();
+
+// Composables
+const { showToast } = useToast();
+const { saveMealWithRecommendations } = useMeals();
 
 // État réactif
 const isSubmitting = ref(false);
@@ -213,6 +225,7 @@ const form = ref<MealForm>({
   notes: "",
   satisfaction: "",
   hungerLevel: "",
+  photo: null,
 });
 
 // Computed
@@ -234,6 +247,9 @@ const addFoodItem = () => {
   });
 };
 
+// Import du composant PhotoUploader
+import PhotoUploader from "@/components/ui/PhotoUploader.vue";
+
 const removeFoodItem = (index: number) => {
   form.value.foods.splice(index, 1);
 };
@@ -249,10 +265,51 @@ const submitForm = async () => {
       foods: form.value.foods.filter((food) => food.name.trim() !== ""),
     };
 
+    const {
+      data,
+      error: saveError,
+      recommendations: newRecommendations,
+    } = await saveMealWithRecommendations({
+      type: cleanedForm.mealType,
+      datetime: cleanedForm.mealTime,
+      foods: cleanedForm.foods,
+      notes: cleanedForm.notes,
+      satisfaction: cleanedForm.satisfaction
+        ? parseInt(cleanedForm.satisfaction)
+        : undefined,
+      hunger_level: cleanedForm.hungerLevel
+        ? parseInt(cleanedForm.hungerLevel)
+        : undefined,
+    });
+
+    if (saveError) {
+      showToast({
+        title: "Erreur lors de la sauvegarde",
+        variant: "error",
+      });
+      return;
+    }
+
+    showToast({
+      title: "Repas enregistré avec succès",
+      variant: "success",
+    });
+
+    if (newRecommendations && newRecommendations.length > 0) {
+      showToast({
+        title: `${newRecommendations.length} nouvelles recommandations générées`,
+        variant: "warning",
+      });
+    }
+
     // Émettre l'événement de sauvegarde
-    $emit("save", cleanedForm);
+    emit("saved");
   } catch (error) {
-    console.error("Erreur lors de la soumission:", error);
+    console.error("Erreur lors de la sauvegarde:", error);
+    showToast({
+      title: "Erreur lors de la sauvegarde",
+      variant: "error",
+    });
   } finally {
     isSubmitting.value = false;
   }

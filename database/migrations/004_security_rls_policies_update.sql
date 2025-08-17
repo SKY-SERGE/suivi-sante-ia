@@ -19,6 +19,12 @@ ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
 -- POLITIQUES POUR LA TABLE USERS
 -- ===============================================================
 
+-- Drop existing policies to prevent conflicts
+DROP POLICY IF EXISTS "Users can read own profile" ON users;
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "Doctors can read consented patient profiles" ON users;
+DROP POLICY IF EXISTS "Admins can read all user profiles" ON users;
+
 -- Les utilisateurs peuvent lire leur propre profil
 CREATE POLICY "Users can read own profile" ON users
     FOR SELECT
@@ -29,34 +35,33 @@ CREATE POLICY "Users can update own profile" ON users
     FOR UPDATE
     USING (auth.uid() = id);
 
--- Les médecins peuvent lire les profils des patients qui ont donné leur consentement
+-- Médecins peuvent lire les profils des patients consentants
 CREATE POLICY "Doctors can read consented patient profiles" ON users
     FOR SELECT
     USING (
-        role = 'patient' AND
-        EXISTS (
-            SELECT 1 FROM consents
-            WHERE patient_id = users.id
-            AND doctor_id = auth.uid()
-            AND status = 'granted'
+        role = 'patient' AND (
+            EXISTS (
+                SELECT 1 FROM consents
+                WHERE patient_id = users.id
+                AND doctor_id = auth.uid()
+                AND status = 'granted'
+            )
+            OR auth.uid() = id
         )
-        OR auth.uid() = id
     );
 
--- Les admins peuvent tout lire (pour les cas d'urgence)
+-- Les administrateurs peuvent lire tous les profils
 CREATE POLICY "Admins can read all user profiles" ON users
     FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM users as u
-            WHERE u.id = auth.uid()
-            AND u.role = 'admin'
-        )
-    );
+    USING (is_admin(auth.uid()));
 
 -- ===============================================================
 -- POLITIQUES POUR LA TABLE USER_PROFILES
 -- ===============================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can manage own detailed profile" ON user_profiles;
+DROP POLICY IF EXISTS "Doctors can read consented patient detailed profiles" ON user_profiles;
 
 -- Les utilisateurs peuvent gérer leur propre profil détaillé
 CREATE POLICY "Users can manage own detailed profile" ON user_profiles
@@ -80,6 +85,11 @@ CREATE POLICY "Doctors can read consented patient detailed profiles" ON user_pro
 -- POLITIQUES POUR LA TABLE CONSENTS
 -- ===============================================================
 
+-- Drop existing policies
+DROP POLICY IF EXISTS "Patients can manage their consents" ON consents;
+DROP POLICY IF EXISTS "Doctors can view their consents" ON consents;
+DROP POLICY IF EXISTS "Doctors can create consent requests" ON consents;
+
 -- Les patients peuvent gérer leurs consentements
 CREATE POLICY "Patients can manage their consents" ON consents
     FOR ALL
@@ -88,7 +98,7 @@ CREATE POLICY "Patients can manage their consents" ON consents
 -- Les médecins peuvent voir les consentements qui les concernent
 CREATE POLICY "Doctors can view their consents" ON consents
     FOR SELECT
-    USING (doctor_id = auth.uid() OR patient_id = auth.uid());
+    USING (doctor_id = auth.uid());
 
 -- Les médecins peuvent créer des demandes de consentement
 CREATE POLICY "Doctors can create consent requests" ON consents
@@ -105,6 +115,11 @@ CREATE POLICY "Doctors can create consent requests" ON consents
 -- ===============================================================
 -- POLITIQUES POUR LA TABLE HEALTH_DATA
 -- ===============================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Patients can manage own health data" ON health_data;
+DROP POLICY IF EXISTS "Doctors can read consented patient health data" ON health_data;
+DROP POLICY IF EXISTS "Doctors can add health data for consented patients" ON health_data;
 
 -- Les patients peuvent gérer leurs propres données de santé
 CREATE POLICY "Patients can manage own health data" ON health_data
@@ -141,12 +156,16 @@ CREATE POLICY "Doctors can add health data for consented patients" ON health_dat
 -- POLITIQUES POUR LA TABLE HEALTH_GOALS
 -- ===============================================================
 
--- Les patients peuvent gérer leurs objectifs de santé
+-- Drop existing policies
+DROP POLICY IF EXISTS "Patients can manage own health goals" ON health_goals;
+DROP POLICY IF EXISTS "Doctors can manage consented patient health goals" ON health_goals;
+
+-- Les patients peuvent gérer leurs propres objectifs de santé
 CREATE POLICY "Patients can manage own health goals" ON health_goals
     FOR ALL
     USING (user_id = auth.uid());
 
--- Les médecins peuvent lire et modifier les objectifs des patients consentants
+-- Les médecins peuvent gérer les objectifs des patients consentants
 CREATE POLICY "Doctors can manage consented patient health goals" ON health_goals
     FOR ALL
     USING (
@@ -162,6 +181,10 @@ CREATE POLICY "Doctors can manage consented patient health goals" ON health_goal
 -- ===============================================================
 -- POLITIQUES POUR LA TABLE MEAL_RECORDS
 -- ===============================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Patients can manage own meal records" ON meal_records;
+DROP POLICY IF EXISTS "Doctors can read consented patient meal records" ON meal_records;
 
 -- Les patients peuvent gérer leurs enregistrements de repas
 CREATE POLICY "Patients can manage own meal records" ON meal_records
@@ -185,10 +208,27 @@ CREATE POLICY "Doctors can read consented patient meal records" ON meal_records
 -- POLITIQUES POUR LA TABLE AI_RECOMMENDATIONS
 -- ===============================================================
 
+-- Drop existing policies
+DROP POLICY IF EXISTS "Patients can read own AI recommendations" ON ai_recommendations;
+DROP POLICY IF EXISTS "System can create AI recommendations" ON ai_recommendations;
+DROP POLICY IF EXISTS "Patients can update own AI recommendations status" ON ai_recommendations;
+DROP POLICY IF EXISTS "Doctors can read consented patient AI recommendations" ON ai_recommendations;
+
 -- Les patients peuvent lire leurs propres recommandations
 CREATE POLICY "Patients can read own AI recommendations" ON ai_recommendations
     FOR SELECT
     USING (user_id = auth.uid());
+
+-- Le système peut créer des recommandations
+CREATE POLICY "System can create AI recommendations" ON ai_recommendations
+    FOR INSERT
+    WITH CHECK (true); 
+
+-- Les patients peuvent mettre à jour le statut de leurs recommandations
+CREATE POLICY "Patients can update own AI recommendations status" ON ai_recommendations
+    FOR UPDATE
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
 
 -- Les médecins peuvent lire les recommandations des patients consentants
 CREATE POLICY "Doctors can read consented patient AI recommendations" ON ai_recommendations
@@ -203,36 +243,29 @@ CREATE POLICY "Doctors can read consented patient AI recommendations" ON ai_reco
         OR user_id = auth.uid()
     );
 
--- Le système peut créer des recommandations
-CREATE POLICY "System can create AI recommendations" ON ai_recommendations
-    FOR INSERT
-    WITH CHECK (true); -- Autoriser l'insertion depuis l'application
-
--- Les patients peuvent marquer leurs recommandations comme lues/archivées
-CREATE POLICY "Patients can update own AI recommendations status" ON ai_recommendations
-    FOR UPDATE
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-
 -- ===============================================================
 -- POLITIQUES POUR LA TABLE CHAT_MESSAGES
 -- ===============================================================
 
--- Les utilisateurs peuvent lire les messages qu'ils ont envoyés ou reçus
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can read their own chat messages" ON chat_messages;
+DROP POLICY IF EXISTS "Users can send chat messages" ON chat_messages;
+DROP POLICY IF EXISTS "Users can mark messages as read" ON chat_messages;
+
+-- Les utilisateurs peuvent lire leurs propres messages de chat
 CREATE POLICY "Users can read their own chat messages" ON chat_messages
     FOR SELECT
     USING (
         sender_id = auth.uid() 
         OR recipient_id = auth.uid()
-        OR recipient_id IS NULL -- Messages du chatbot IA
+        OR recipient_id IS NULL 
     );
 
 -- Les utilisateurs peuvent envoyer des messages
 CREATE POLICY "Users can send chat messages" ON chat_messages
     FOR INSERT
     WITH CHECK (
-        sender_id = auth.uid() AND
-        (
+        sender_id = auth.uid() AND (
             -- Messages vers le chatbot IA
             recipient_id IS NULL
             OR
@@ -259,13 +292,18 @@ CREATE POLICY "Users can mark messages as read" ON chat_messages
 -- POLITIQUES POUR LA TABLE CHAT_SESSIONS
 -- ===============================================================
 
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can read own chat sessions" ON chat_sessions;
+DROP POLICY IF EXISTS "Users can create chat sessions" ON chat_sessions;
+DROP POLICY IF EXISTS "Users can update own chat sessions" ON chat_sessions;
+
 -- Les utilisateurs peuvent lire leurs propres sessions de chat
 CREATE POLICY "Users can read own chat sessions" ON chat_sessions
     FOR SELECT
     USING (
-        patient_id = auth.uid() 
+        patient_id = auth.uid()
         OR doctor_id = auth.uid()
-        OR (doctor_id IS NULL AND patient_id = auth.uid()) -- Sessions avec IA
+        OR (doctor_id IS NULL AND patient_id = auth.uid()) 
     );
 
 -- Les utilisateurs peuvent créer des sessions de chat
@@ -283,195 +321,3 @@ CREATE POLICY "Users can update own chat sessions" ON chat_sessions
         patient_id = auth.uid() 
         OR doctor_id = auth.uid()
     );
-
--- ===============================================================
--- FONCTIONS D'AIDE POUR LA SÉCURITÉ
--- ===============================================================
-
--- Fonction pour vérifier si un utilisateur est médecin
-CREATE OR REPLACE FUNCTION is_doctor(user_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM users
-        WHERE id = user_id AND role = 'doctor'
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Fonction pour vérifier si un utilisateur est admin
-CREATE OR REPLACE FUNCTION is_admin(user_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM users
-        WHERE id = user_id AND role = 'admin'
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Fonction pour vérifier le consentement entre patient et médecin
-CREATE OR REPLACE FUNCTION has_valid_consent(patient_id UUID, doctor_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM consents
-        WHERE consents.patient_id = has_valid_consent.patient_id
-        AND consents.doctor_id = has_valid_consent.doctor_id
-        AND status = 'granted'
-        AND (expires_at IS NULL OR expires_at > NOW())
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- ===============================================================
--- TRIGGERS POUR L'AUDIT DE SÉCURITÉ
--- ===============================================================
-
--- Table pour l'audit des accès aux données sensibles
-CREATE TABLE IF NOT EXISTS security_audit_log (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id),
-    table_name TEXT NOT NULL,
-    operation TEXT NOT NULL, -- SELECT, INSERT, UPDATE, DELETE
-    record_id UUID,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    ip_address INET,
-    user_agent TEXT,
-    details JSONB DEFAULT '{}'
-);
-
--- Activer RLS sur la table d'audit
-ALTER TABLE security_audit_log ENABLE ROW LEVEL SECURITY;
-
--- Seuls les admins peuvent lire les logs d'audit
-CREATE POLICY "Only admins can read security audit logs" ON security_audit_log
-    FOR SELECT
-    USING (is_admin(auth.uid()));
-
--- Le système peut écrire des logs d'audit
-CREATE POLICY "System can write security audit logs" ON security_audit_log
-    FOR INSERT
-    WITH CHECK (true);
-
--- Fonction pour logger l'accès aux données sensibles
-CREATE OR REPLACE FUNCTION log_sensitive_data_access()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Ignorer les opérations système
-    IF current_user = 'postgres' THEN
-        RETURN COALESCE(NEW, OLD);
-    END IF;
-
-    INSERT INTO security_audit_log (
-        user_id,
-        table_name,
-        operation,
-        record_id,
-        details
-    ) VALUES (
-        auth.uid(),
-        TG_TABLE_NAME,
-        TG_OP,
-        COALESCE(NEW.id, OLD.id),
-        jsonb_build_object(
-            'changed_columns', (
-                CASE WHEN TG_OP = 'UPDATE' THEN
-                    ARRAY(
-                        SELECT key FROM jsonb_each(to_jsonb(NEW))
-                        WHERE to_jsonb(NEW) ->> key IS DISTINCT FROM to_jsonb(OLD) ->> key
-                    )
-                ELSE NULL END
-            )
-        )
-    );
-
-    RETURN COALESCE(NEW, OLD);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Créer les triggers d'audit pour les tables sensibles
-DO $$
-DECLARE
-    table_name TEXT;
-BEGIN
-    FOR table_name IN 
-        SELECT unnest(ARRAY[
-            'health_data', 
-            'meal_records', 
-            'chat_messages', 
-            'ai_recommendations',
-            'consents'
-        ])
-    LOOP
-        EXECUTE format('
-            DROP TRIGGER IF EXISTS audit_trigger_%s ON %s;
-            CREATE TRIGGER audit_trigger_%s
-                AFTER INSERT OR UPDATE OR DELETE ON %s
-                FOR EACH ROW EXECUTE FUNCTION log_sensitive_data_access();
-        ', table_name, table_name, table_name, table_name);
-    END LOOP;
-END $$;
-
--- ===============================================================
--- VUES SÉCURISÉES POUR L'APPLICATION
--- ===============================================================
-
--- Vue pour les données de santé avec consentement
-CREATE OR REPLACE VIEW patient_health_data_view AS
-SELECT 
-    hd.*,
-    u.first_name,
-    u.last_name,
-    u.date_of_birth
-FROM health_data hd
-JOIN users u ON hd.user_id = u.id
-WHERE 
-    -- Patient voit ses propres données
-    hd.user_id = auth.uid()
-    OR
-    -- Médecin voit les données des patients consentants
-    (
-        EXISTS (
-            SELECT 1 FROM users doc 
-            WHERE doc.id = auth.uid() AND doc.role = 'doctor'
-        )
-        AND has_valid_consent(hd.user_id, auth.uid())
-    )
-    OR
-    -- Admin voit tout
-    is_admin(auth.uid());
-
--- Vue pour les recommandations IA avec consentement
-CREATE OR REPLACE VIEW patient_recommendations_view AS
-SELECT 
-    ar.*,
-    u.first_name,
-    u.last_name
-FROM ai_recommendations ar
-JOIN users u ON ar.user_id = u.id
-WHERE 
-    -- Patient voit ses propres recommandations
-    ar.user_id = auth.uid()
-    OR
-    -- Médecin voit les recommandations des patients consentants
-    (
-        EXISTS (
-            SELECT 1 FROM users doc 
-            WHERE doc.id = auth.uid() AND doc.role = 'doctor'
-        )
-        AND has_valid_consent(ar.user_id, auth.uid())
-    )
-    OR
-    -- Admin voit tout
-    is_admin(auth.uid());
-
--- ===============================================================
--- COMMENTAIRES ET DOCUMENTATION
--- ===============================================================
-
-COMMENT ON TABLE security_audit_log IS 'Table d''audit pour tracer tous les accès aux données sensibles';
-COMMENT ON FUNCTION has_valid_consent IS 'Vérifie si un consentement valide existe entre un patient et un médecin';
-COMMENT ON FUNCTION log_sensitive_data_access IS 'Fonction trigger pour logger l''accès aux données sensibles';
-COMMENT ON VIEW patient_health_data_view IS 'Vue sécurisée pour l''accès aux données de santé avec respect du consentement';
-COMMENT ON VIEW patient_recommendations_view IS 'Vue sécurisée pour l''accès aux recommandations IA avec respect du consentement';
