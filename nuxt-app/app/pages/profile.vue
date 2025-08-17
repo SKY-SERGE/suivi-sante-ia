@@ -20,6 +20,25 @@
           <CardContent>
             <form class="space-y-6" @submit="onSubmit">
               <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div class="col-span-2">
+                  <FormField name="email">
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          :default-value="userEmail"
+                          type="email"
+                          readonly
+                          disabled
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        L'email ne peut pas être modifié depuis cette interface.
+                      </FormDescription>
+                    </FormItem>
+                  </FormField>
+                </div>
+
                 <FormField v-slot="{ componentField }" name="first_name">
                   <FormItem>
                     <FormLabel
@@ -44,23 +63,6 @@
                       <Input placeholder="Votre nom" v-bind="componentField" />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                </FormField>
-
-                <FormField name="email">
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        :value="userEmail"
-                        type="email"
-                        readonly
-                        disabled
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      L'email ne peut pas être modifié depuis cette interface.
-                    </FormDescription>
                   </FormItem>
                 </FormField>
 
@@ -208,7 +210,10 @@ const profileSchema = toTypedSchema(
     last_name: z.string().min(1, "Le nom est requis"),
     phone: z
       .string()
-      .regex(/^(?:\+33|0)[1-9](?:[0-9]{8})$/, "Format de téléphone invalide")
+      .regex(
+        /^(\+?\d{1,3}[-.\s]?)?(\(?\d{1,4}\)?[-.\s]?)?[\d\-.\s]{6,}$/,
+        "Format de téléphone invalide"
+      )
       .optional()
       .or(z.literal("")),
     date_of_birth: z.string().optional(),
