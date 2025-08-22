@@ -3,9 +3,7 @@
     <!-- En-tête de la page -->
     <div class="mb-6">
       <div class="flex items-center space-x-3 mb-2">
-        <div
-          class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"
-        >
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
           <Icon name="lucide:bot" class="w-5 h-5 text-white" />
         </div>
         <h1 class="text-2xl font-bold text-gray-900">Assistant Santé IA</h1>
@@ -17,10 +15,10 @@
     </div>
 
     <!-- Interface du chatbot -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <!-- Chatbot principal -->
-      <div class="lg:col-span-3 space-y-6">
-        <Card>
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      <div class="xl:col-span-3 space-y-6">
+        <!-- Card Chatbot principal -->
+        <Card class="bg-gray-100 border-0 shadow-none">
           <CardContent class="p-0">
             <HealthChatbot />
           </CardContent>
@@ -30,10 +28,7 @@
         <Card class="mb-6 border-amber-200 bg-amber-50">
           <CardContent class="p-4">
             <div class="flex items-start space-x-3">
-              <Icon
-                name="lucide:alert-triangle"
-                class="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0"
-              />
+              <Icon name="lucide:alert-triangle" class="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
                 <h3 class="font-semibold text-amber-900 mb-1">
                   Avertissement médical important
@@ -158,34 +153,26 @@
             </CardTitle>
           </CardHeader>
           <CardContent class="space-y-2">
-            <NuxtLink
-              to="/patient/dashboard"
-              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-            >
+            <NuxtLink to="/patient/dashboard"
+              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors">
               <Icon name="lucide:activity" class="w-4 h-4" />
               <span>Tableau de bord santé</span>
             </NuxtLink>
 
-            <NuxtLink
-              to="/patient/health-data"
-              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-            >
+            <NuxtLink to="/patient/health-data"
+              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors">
               <Icon name="lucide:clipboard-list" class="w-4 h-4" />
               <span>Saisie de données</span>
             </NuxtLink>
 
-            <NuxtLink
-              to="/patient/meals"
-              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-            >
+            <NuxtLink to="/patient/meals"
+              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors">
               <Icon name="lucide:utensils" class="w-4 h-4" />
               <span>Analyse des repas</span>
             </NuxtLink>
 
-            <NuxtLink
-              to="/patient/messages"
-              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-            >
+            <NuxtLink to="/patient/messages"
+              class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 transition-colors">
               <Icon name="lucide:mail" class="w-4 h-4" />
               <span>Messages sécurisés</span>
             </NuxtLink>

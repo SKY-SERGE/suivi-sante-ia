@@ -10,36 +10,20 @@
 
     <!-- Actions principales -->
     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-      <Button
-        @click="showCreateModal = true"
-        class="bg-blue-600 hover:bg-blue-700"
-      >
+      <Button variant="outline" class="border border-blue-600 hover:bg-blue-700" @click="showCreateModal = true">
         <Icon name="lucide:plus" class="h-4 w-4 mr-2" />
         Nouvel objectif
       </Button>
 
-      <Button
-        variant="outline"
-        @click="loadSuggestions"
-        :disabled="loadingSuggestions"
-      >
+      <Button class="bg-gradient-to-r from-indigo-500 to-blue-600 hover:bg-blue-700" :disabled="loadingSuggestions"
+        @click="loadSuggestions">
         <Icon name="lucide:lightbulb" class="h-4 w-4 mr-2" />
         {{ loadingSuggestions ? "Chargement..." : "Suggestions" }}
       </Button>
       <div class="flex gap-2">
-        <Button
-          v-for="filter in statusFilters"
-          :key="filter.value"
-          :variant="currentFilter === filter.value ? 'default' : 'outline'"
-          @click="
-            currentFilter = filter.value as
-              | 'all'
-              | 'active'
-              | 'completed'
-              | 'paused'
-          "
-          size="sm"
-        >
+        <Button v-for="filter in statusFilters" :key="filter.value"
+          :variant="currentFilter === filter.value ? 'default' : 'outline'" size="sm"
+          @click="currentFilter = filter.value as | 'all' | 'active' | 'completed' | 'paused'">
           <Icon :name="filter.icon" class="h-4 w-4 mr-1" />
           {{ filter.label }}
         </Button>
@@ -48,25 +32,16 @@
 
     <!-- Objectifs actifs avec progrès -->
     <div v-if="filteredGoals.length > 0" class="space-y-6">
-      <div
-        v-for="goalProgress in filteredGoals"
-        :key="goalProgress.goal.id"
-        class="relative"
-      >
+      <div v-for="goalProgress in filteredGoals" :key="goalProgress.goal.id" class="relative">
         <Card :class="getGoalCardClass(goalProgress.goal.status)">
           <CardHeader>
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <CardTitle class="flex items-center">
-                  <Icon
-                    :name="getGoalIcon(goalProgress.goal)"
-                    class="h-5 w-5 mr-2"
-                  />
+                  <Icon :name="getGoalIcon(goalProgress.goal)" class="h-5 w-5 mr-2" />
                   {{ goalProgress.goal.title }}
-                  <span
-                    :class="getStatusBadgeClass(goalProgress.goal.status)"
-                    class="ml-3 px-2 py-1 text-xs font-medium rounded-full"
-                  >
+                  <span :class="getStatusBadgeClass(goalProgress.goal.status)"
+                    class="ml-3 px-2 py-1 text-xs font-medium rounded-full">
                     {{ getStatusLabel(goalProgress.goal.status) }}
                   </span>
                 </CardTitle>
@@ -77,33 +52,17 @@
 
               <!-- Menu d'actions -->
               <div class="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  @click="editGoal(goalProgress.goal)"
-                >
+                <Button size="sm" variant="ghost" @click="editGoal(goalProgress.goal)">
                   <Icon name="lucide:edit" class="h-4 w-4" />
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  @click="toggleGoalStatus(goalProgress.goal)"
-                >
-                  <Icon
-                    :name="
-                      goalProgress.goal.status === 'active'
-                        ? 'lucide:pause'
-                        : 'lucide:play'
-                    "
-                    class="h-4 w-4"
-                  />
+                <Button size="sm" variant="ghost" @click="toggleGoalStatus(goalProgress.goal)">
+                  <Icon :name="goalProgress.goal.status === 'active'
+                    ? 'lucide:pause'
+                    : 'lucide:play'
+                    " class="h-4 w-4" />
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  @click="deleteGoalConfirm(goalProgress.goal)"
-                  class="text-red-600 hover:text-red-700"
-                >
+                <Button size="sm" variant="ghost" class="text-red-600 hover:text-red-700"
+                  @click="deleteGoalConfirm(goalProgress.goal)">
                   <Icon name="lucide:trash-2" class="h-4 w-4" />
                 </Button>
               </div>
@@ -129,11 +88,8 @@
               </div>
 
               <div class="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  :class="getProgressBarClass(goalProgress)"
-                  class="h-3 rounded-full transition-all duration-300"
-                  :style="{ width: `${Math.min(100, goalProgress.progress)}%` }"
-                ></div>
+                <div :class="getProgressBarClass(goalProgress)" class="h-3 rounded-full transition-all duration-300"
+                  :style="{ width: `${Math.min(100, goalProgress.progress)}%` }" />
               </div>
             </div>
 
@@ -155,29 +111,20 @@
 
               <div v-if="goalProgress.daysRemaining !== undefined">
                 <div class="text-gray-500">Jours restants</div>
-                <div
-                  :class="
-                    goalProgress.daysRemaining < 7
-                      ? 'text-red-600 font-semibold'
-                      : 'font-medium'
-                  "
-                >
+                <div :class="goalProgress.daysRemaining < 7
+                  ? 'text-red-600 font-semibold'
+                  : 'font-medium'
+                  ">
                   {{ goalProgress.daysRemaining }} jours
                 </div>
               </div>
             </div>
 
             <!-- Indicateur de progression -->
-            <div
-              v-if="goalProgress.goal.status === 'active'"
-              class="mt-4 p-3 rounded-lg"
-              :class="getProgressIndicatorClass(goalProgress)"
-            >
+            <div v-if="goalProgress.goal.status === 'active'" class="mt-4 p-3 rounded-lg"
+              :class="getProgressIndicatorClass(goalProgress)">
               <div class="flex items-center">
-                <Icon
-                  :name="getProgressIcon(goalProgress)"
-                  class="h-5 w-5 mr-2"
-                />
+                <Icon :name="getProgressIcon(goalProgress)" class="h-5 w-5 mr-2" />
                 <span class="font-medium">{{
                   getProgressMessage(goalProgress)
                 }}</span>
@@ -205,17 +152,15 @@
             : "Aucun objectif ne correspond au filtre sélectionné"
         }}
       </p>
-      <Button @click="showCreateModal = true" v-if="currentFilter === 'all'">
+      <Button v-if="currentFilter === 'all'" @click="showCreateModal = true">
         <Icon name="lucide:plus" class="h-4 w-4 mr-2" />
         Créer mon premier objectif
       </Button>
     </div>
 
     <!-- Modal de création/édition d'objectif -->
-    <div
-      v-if="showCreateModal || editingGoal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-    >
+    <div v-if="showCreateModal || editingGoal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <Card class="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <CardTitle>{{
@@ -230,82 +175,51 @@
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form @submit.prevent="saveGoal" class="space-y-4">
+          <form class="space-y-4" @submit.prevent="saveGoal">
             <div>
               <Label for="title">Titre de l'objectif *</Label>
-              <Input
-                id="title"
-                v-model="goalForm.title"
-                placeholder="Ex: Perdre 5 kg"
-                required
-              />
+              <Input id="title" v-model="goalForm.title" placeholder="Ex: Perdre 5 kg" required />
             </div>
 
             <div>
               <Label for="description">Description</Label>
-              <textarea
-                id="description"
-                v-model="goalForm.description"
-                rows="3"
+              <textarea id="description" v-model="goalForm.description" rows="3"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Décrivez votre objectif..."
-              />
+                placeholder="Décrivez votre objectif..." />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <Label for="target_value">Valeur cible</Label>
-                <Input
-                  id="target_value"
-                  v-model.number="goalForm.target_value"
-                  type="number"
-                  step="0.1"
-                  placeholder="Ex: 70"
-                />
+                <Input id="target_value" v-model.number="goalForm.target_value" type="number" step="0.1"
+                  placeholder="Ex: 70" />
               </div>
               <div>
                 <Label for="unit">Unité</Label>
-                <Input
-                  id="unit"
-                  v-model="goalForm.unit"
-                  placeholder="Ex: kg, heures, /10"
-                />
+                <Input id="unit" v-model="goalForm.unit" placeholder="Ex: kg, heures, /10" />
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <Label for="start_date">Date de début</Label>
-                <Input
-                  id="start_date"
-                  v-model="goalForm.start_date"
-                  type="date"
-                  required
-                />
+                <Input id="start_date" v-model="goalForm.start_date" type="date" required />
               </div>
               <div>
                 <Label for="target_date">Date cible</Label>
-                <Input
-                  id="target_date"
-                  v-model="goalForm.target_date"
-                  type="date"
-                />
+                <Input id="target_date" v-model="goalForm.target_date" type="date" />
               </div>
             </div>
 
             <div class="flex space-x-3 pt-4">
               <Button type="submit" :disabled="saving" class="flex-1">
-                <Icon
-                  v-if="saving"
-                  name="lucide:loader-2"
-                  class="h-4 w-4 mr-2 animate-spin"
-                />
+                <Icon v-if="saving" name="lucide:loader-2" class="h-4 w-4 mr-2 animate-spin" />
                 {{
                   saving
                     ? "Enregistrement..."
                     : editingGoal
-                    ? "Modifier"
-                    : "Créer"
+                      ? "Modifier"
+                      : "Créer"
                 }}
               </Button>
               <Button type="button" variant="outline" @click="cancelEdit">
@@ -318,10 +232,8 @@
     </div>
 
     <!-- Modal de suggestions -->
-    <div
-      v-if="showSuggestions && suggestions.length > 0"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-    >
+    <div v-if="showSuggestions && suggestions.length > 0"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <Card class="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <CardTitle>Suggestions d'objectifs</CardTitle>
@@ -331,12 +243,8 @@
         </CardHeader>
         <CardContent>
           <div class="space-y-4">
-            <div
-              v-for="(suggestion, index) in suggestions"
-              :key="index"
-              class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-              @click="createFromSuggestion(suggestion)"
-            >
+            <div v-for="(suggestion, index) in suggestions" :key="index"
+              class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" @click="createFromSuggestion(suggestion)">
               <h4 class="font-medium">{{ suggestion.title }}</h4>
               <p class="text-sm text-gray-600 mt-1">
                 {{ suggestion.description }}
@@ -348,11 +256,7 @@
             </div>
           </div>
           <div class="flex space-x-3 pt-4">
-            <Button
-              variant="outline"
-              @click="showSuggestions = false"
-              class="flex-1"
-            >
+            <Button variant="outline" class="flex-1" @click="showSuggestions = false">
               Fermer
             </Button>
           </div>
@@ -384,7 +288,6 @@ const {
   createGoal,
   updateGoal,
   deleteGoal,
-  suggestGoals,
 } = useHealthGoals();
 const toastStore = useToastStore();
 
@@ -523,7 +426,21 @@ const deleteGoalConfirm = async (goal: any) => {
 const loadSuggestions = async () => {
   loadingSuggestions.value = true;
   try {
-    suggestions.value = await suggestGoals();
+    // Appel à l'API pour obtenir des suggestions personnalisées
+    const response = await $fetch<{ success: boolean, suggestions: any[] }>('/api/ai/goal-suggestions', {
+      method: 'POST',
+      body: {
+        healthData: [],
+        existingGoals: goals.value.map(g => ({
+          title: g.title,
+          category: g.category || 'other',
+          status: g.status
+        })),
+        userPreferences: {}
+      }
+    });
+
+    suggestions.value = response?.suggestions || [];
     if (suggestions.value.length > 0) {
       showSuggestions.value = true;
     } else {

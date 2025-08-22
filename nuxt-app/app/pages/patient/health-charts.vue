@@ -15,11 +15,8 @@
         <div class="flex flex-wrap gap-4 mb-6">
           <div class="flex items-center space-x-2">
             <label class="text-sm font-medium">Type de données:</label>
-            <select
-              v-model="selectedDataType"
-              class="px-3 py-2 border border-gray-300 rounded-md"
-              @change="updateCharts"
-            >
+            <select v-model="selectedDataType" class="px-3 py-2 border border-gray-300 rounded-md"
+              @change="updateCharts">
               <option value="mood">Humeur</option>
               <option value="sleep">Sommeil</option>
               <option value="activity">Activité</option>
@@ -32,26 +29,17 @@
 
           <div class="flex items-center space-x-2">
             <label class="text-sm font-medium">Période d'analyse:</label>
-            <select
-              v-model="analysisMode"
-              class="px-3 py-2 border border-gray-300 rounded-md"
-              @change="updateCharts"
-            >
+            <select v-model="analysisMode" class="px-3 py-2 border border-gray-300 rounded-md" @change="updateCharts">
               <option value="day">Par jour</option>
               <option value="week">Par semaine</option>
               <option value="month">Par mois</option>
             </select>
           </div>
 
-          <button
-            @click="refreshData"
-            :disabled="loading"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
-          >
-            <Icon
-              :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'"
-              :class="['h-4 w-4 mr-2', loading && 'animate-spin']"
-            />
+          <button @click="refreshData" :disabled="loading"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center">
+            <Icon :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'"
+              :class="['h-4 w-4 mr-2', loading && 'animate-spin']" />
             Actualiser
           </button>
         </div>
@@ -61,10 +49,7 @@
     <!-- Message si pas de données -->
     <Card v-if="!loading && chartData.length === 0">
       <CardContent class="text-center py-12">
-        <Icon
-          name="lucide:bar-chart-3"
-          class="h-16 w-16 mx-auto text-gray-400 mb-4"
-        />
+        <Icon name="lucide:bar-chart-3" class="h-16 w-16 mx-auto text-gray-400 mb-4" />
         <h3 class="text-lg font-medium text-gray-900 mb-2">
           Aucune donnée disponible
         </h3>
@@ -72,10 +57,8 @@
           Commencez par enregistrer des données de
           {{ getDataTypeName(selectedDataType) }} pour voir les graphiques.
         </p>
-        <NuxtLink
-          to="/patient/health-data"
-          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
+        <NuxtLink to="/patient/health-data"
+          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
           <Icon name="lucide:plus" class="h-4 w-4 mr-2" />
           Ajouter des données
         </NuxtLink>
@@ -86,56 +69,35 @@
     <div v-else-if="!loading" class="grid grid-cols-1 xl:grid-cols-2 gap-8">
       <!-- Graphique linéaire avancé -->
       <div class="xl:col-span-2">
-        <HealthAdvancedChart
-          :data="chartData"
-          :title="`Évolution de ${getDataTypeName(selectedDataType)}`"
+        <HealthAdvancedChart :data="chartData" :title="`Évolution de ${getDataTypeName(selectedDataType)}`"
           :description="`Tendance détaillée sur ${chartData.length} points de données`"
-          :unit="getDataUnit(selectedDataType)"
-          :line-color="getDataTypeColor(selectedDataType)"
-          :show-trend-line="true"
-          :annotations="chartAnnotations"
-        />
+          :unit="getDataUnit(selectedDataType)" :line-color="getDataTypeColor(selectedDataType)" :show-trend-line="true"
+          :annotations="chartAnnotations" />
       </div>
 
       <!-- Graphique en barres par période -->
-      <HealthBarChart
-        :data="barChartData"
-        :title="`${getDataTypeName(selectedDataType)} par ${
-          analysisMode === 'day'
-            ? 'jour'
-            : analysisMode === 'week'
+      <HealthBarChart :data="barChartData" :title="`${getDataTypeName(selectedDataType)} par ${analysisMode === 'day'
+          ? 'jour'
+          : analysisMode === 'week'
             ? 'semaine'
             : 'mois'
-        }`"
-        :description="`Moyenne ${
-          analysisMode === 'day'
+        }`" :description="`Moyenne ${analysisMode === 'day'
             ? 'quotidienne'
             : analysisMode === 'week'
-            ? 'hebdomadaire'
-            : 'mensuelle'
-        }`"
-        :unit="getDataUnit(selectedDataType)"
-        :color-scheme="getBarChartColorScheme(selectedDataType)"
-        :show-values="true"
-        :show-average-line="true"
-      />
+              ? 'hebdomadaire'
+              : 'mensuelle'
+          }`" :unit="getDataUnit(selectedDataType)" :color-scheme="getBarChartColorScheme(selectedDataType)"
+        :show-values="true" :show-average-line="true" />
 
       <!-- Graphique circulaire de distribution -->
-      <HealthPieChart
-        v-if="pieChartData.length > 0"
-        :data="pieChartData"
-        :title="`Distribution de ${getDataTypeName(selectedDataType)}`"
-        :description="'Répartition par catégories'"
-        :color-scheme="getPieChartColorScheme(selectedDataType)"
-        :donut-style="true"
-        :show-stats="true"
-        :center-text="{
+      <HealthPieChart v-if="pieChartData.length > 0" :data="pieChartData"
+        :title="`Distribution de ${getDataTypeName(selectedDataType)}`" :description="'Répartition par catégories'"
+        :color-scheme="getPieChartColorScheme(selectedDataType)" :donut-style="true" :show-stats="true" :center-text="{
           label: 'Total',
           value: pieChartData
             .reduce((sum, item) => sum + item.value, 0)
             .toString(),
-        }"
-      />
+        }" />
     </div>
 
     <!-- Insights et recommandations -->
@@ -152,15 +114,9 @@
       </CardHeader>
       <CardContent>
         <div class="space-y-3">
-          <div
-            v-for="(insight, index) in insights"
-            :key="index"
-            class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-200"
-          >
-            <Icon
-              name="lucide:info"
-              class="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0"
-            />
+          <div v-for="(insight, index) in insights" :key="index"
+            class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <Icon name="lucide:info" class="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
             <p class="text-blue-800">{{ insight }}</p>
           </div>
         </div>
@@ -202,10 +158,7 @@
             <div class="text-sm text-gray-600">Médiane</div>
           </div>
           <div class="text-center p-4 bg-gray-50 rounded-lg">
-            <div
-              class="text-2xl font-bold"
-              :class="getTrendColorClass(stats.trend)"
-            >
+            <div class="text-2xl font-bold" :class="getTrendColorClass(stats.trend)">
               {{ getTrendText(stats.trend) }}
             </div>
             <div class="text-sm text-gray-600">Tendance</div>
@@ -217,10 +170,7 @@
     <!-- État de chargement -->
     <Card v-if="loading">
       <CardContent class="text-center py-12">
-        <Icon
-          name="lucide:loader-2"
-          class="h-8 w-8 mx-auto animate-spin text-blue-600 mb-4"
-        />
+        <Icon name="lucide:loader-2" class="h-8 w-8 mx-auto animate-spin text-blue-600 mb-4" />
         <p class="text-gray-600">Chargement des données de visualisation...</p>
       </CardContent>
     </Card>
@@ -232,7 +182,7 @@ import type {
   ChartDataPoint,
   BarChartDataPoint,
   PieChartDataPoint,
-} from "@/composables/useHealthCharts";
+} from "~/composables/health/useHealthCharts";
 
 // Importation des composants de graphiques
 import HealthAdvancedChart from "@/components/health/charts/HealthAdvancedChart.vue";

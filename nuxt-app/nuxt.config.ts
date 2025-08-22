@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     googleVisionApiKey: process.env.GOOGLE_VISION_API_KEY,
     googleVisionProjectId: process.env.GOOGLE_VISION_PROJECT_ID,
     googleAiApiKey: process.env.GOOGLE_AI_API_KEY,
+    googleGenerativeAiApiKey: "",
     // Clé service role Supabase pour contourner RLS côté serveur
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     // Clé secrète pour CSRF protection
@@ -44,11 +45,11 @@ export default defineNuxtConfig({
           content: "Suivi Santé IA - Votre assistant santé intelligent",
         },
         // Content Security Policy pour la sécurité
-        {
-          "http-equiv": "Content-Security-Policy",
-          content:
-            "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://vision.googleapis.com https://generativelanguage.googleapis.com https://*.ngrok-free.app; frame-ancestors 'none';",
-        },
+        // {
+        //   "http-equiv": "Content-Security-Policy",
+        //   content:
+        //     "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://vision.googleapis.com https://generativelanguage.googleapis.com https://monapistable.ngrok.io; frame-ancestors 'none';",
+        // },
         // Headers de sécurité additionnels
         { "http-equiv": "X-Content-Type-Options", content: "nosniff" },
         { "http-equiv": "X-Frame-Options", content: "DENY" },
@@ -73,6 +74,15 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
+  imports: {
+    dirs: [
+      "composables",
+      "composables/health",
+      "composables/recommendations",
+      "composables/user",
+    ],
+  },
+
   modules: [
     "@nuxt/eslint",
     "@nuxt/fonts",
@@ -82,18 +92,6 @@ export default defineNuxtConfig({
     "@nuxtjs/supabase",
     "shadcn-nuxt",
   ],
-
-  shadcn: {
-    /**
-     * Prefix for all the imported component
-     */
-    prefix: "",
-    /**
-     * Directory that the component lives in.
-     * @default "./components/ui"
-     */
-    componentDir: "./components/ui",
-  },
 
   // Configuration Supabase
   supabase: {

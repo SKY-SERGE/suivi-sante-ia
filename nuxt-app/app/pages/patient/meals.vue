@@ -13,18 +13,12 @@
             </p>
           </div>
           <div class="flex gap-3">
-            <Button
-              @click="showAddMealDialog = true"
-              class="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button @click="showAddMealDialog = true" class="bg-blue-600 hover:bg-blue-700">
               <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
               Ajouter un repas
             </Button>
-            <Button
-              @click="showPhotoDialog = true"
-              variant="outline"
-              class="border-green-600 text-green-600 hover:bg-green-50"
-            >
+            <Button @click="showPhotoDialog = true" variant="outline"
+              class="border-green-600 text-green-600 hover:bg-green-50">
               <Icon name="lucide:camera" class="mr-2 h-4 w-4" />
               Photo de repas
             </Button>
@@ -42,9 +36,7 @@
                 {{ stats.todayCount }}
               </p>
             </div>
-            <div
-              class="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center"
-            >
+            <div class="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <Icon name="lucide:utensils" class="h-4 w-4 text-blue-600" />
             </div>
           </div>
@@ -58,13 +50,8 @@
                 {{ stats.weekCount }}
               </p>
             </div>
-            <div
-              class="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center"
-            >
-              <Icon
-                name="lucide:calendar-days"
-                class="h-4 w-4 text-green-600"
-              />
+            <div class="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <Icon name="lucide:calendar-days" class="h-4 w-4 text-green-600" />
             </div>
           </div>
         </Card>
@@ -77,9 +64,7 @@
                 {{ stats.analyzedPhotosCount }}
               </p>
             </div>
-            <div
-              class="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center"
-            >
+            <div class="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
               <Icon name="lucide:image" class="h-4 w-4 text-purple-600" />
             </div>
           </div>
@@ -93,9 +78,7 @@
                 {{ recommendations.length }}
               </p>
             </div>
-            <div
-              class="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center"
-            >
+            <div class="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center">
               <Icon name="lucide:lightbulb" class="h-4 w-4 text-orange-600" />
             </div>
           </div>
@@ -106,17 +89,12 @@
       <div class="bg-white rounded-xl shadow-sm border border-gray-200">
         <div class="border-b border-gray-200">
           <nav class="flex space-x-8 px-6">
-            <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              @click="activeTab = tab.id"
-              :class="[
-                'py-4 px-1 border-b-2 font-medium text-sm',
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-              ]"
-            >
+            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="[
+              'py-4 px-1 border-b-2 font-medium text-sm',
+              activeTab === tab.id
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+            ]">
               <Icon :name="tab.icon" class="mr-2 h-4 w-4 inline" />
               {{ tab.name }}
             </button>
@@ -126,41 +104,18 @@
         <div class="p-6">
           <!-- Onglet Journal des repas -->
           <div v-if="activeTab === 'meals'" class="space-y-4">
-            <MealsList
-              :meals="meals"
-              @edit="editMeal"
-              @delete="handleDeleteMeal"
-            />
+            <MealsList :meals="(meals as any[])" @edit="editMeal" @delete="handleDeleteMeal" />
           </div>
           <!-- Onglet Recommandations -->
           <div v-if="activeTab === 'recommendations'" class="space-y-6">
-            <!-- Panneau de test de développement -->
-            <RecommendationTestPanel
-              v-if="isDevelopment"
-              :user-id="user?.id || ''"
-              @recommendations-updated="loadRecommendations"
-            />
-
-            <!-- Métriques et insights -->
-            <RecommendationMetrics
-              :recommendations="recommendations"
-              :meals="meals"
-            />
-
             <!-- Liste des recommandations -->
-            <RecommendationsList
-              :recommendations="recommendations"
-              @mark-as-read="handleRecommendationMarkAsRead"
-              @toggle-bookmark="handleRecommendationBookmark"
-              @provide-feedback="handleRecommendationFeedback"
-              @mark-all-as-read="handleMarkAllAsRead"
-              @generate-recommendations="handleGenerateRecommendations"
-            />
+            <RecommendationsList :recommendations="recommendations" :meals="meals"
+              @generate-recommendations="handleGenerateRecommendations" />
           </div>
 
           <!-- Onglet Analyse -->
           <div v-if="activeTab === 'analysis'" class="space-y-4">
-            <MealsAnalysis :meals="meals" />
+            <MealsAnalysis :meals="(meals as any[])" />
           </div>
         </div>
       </div>
@@ -168,9 +123,7 @@
 
     <!-- Dialog d'ajout de repas manuel -->
     <Dialog v-model:open="showAddMealDialog">
-      <DialogContent
-        class="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]"
-      >
+      <DialogContent class="min-w-2xl max-w-5xl max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Ajouter un repas</DialogTitle>
           <DialogDescription>
@@ -178,19 +131,14 @@
           </DialogDescription>
         </DialogHeader>
         <div class="p-6">
-          <ManualMealForm
-            @saved="handleMealSaved"
-            @cancel="showAddMealDialog = false"
-          />
+          <ManualMealForm @saved="handleMealSaved" @cancel="showAddMealDialog = false" />
         </div>
       </DialogContent>
     </Dialog>
 
     <!-- Dialog de photo de repas -->
     <Dialog v-model:open="showPhotoDialog">
-      <DialogContent
-        class="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]"
-      >
+      <DialogContent class="min-w-xl max-w-5xl p-0 max-h-[90dvh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Analyser une photo de repas</DialogTitle>
           <DialogDescription>
@@ -199,10 +147,7 @@
           </DialogDescription>
         </DialogHeader>
         <div class="p-6">
-          <PhotoMealForm
-            @mealSaved="handlePhotoMealSaved"
-            @cancel="showPhotoDialog = false"
-          />
+          <PhotoMealForm @meal-saved="handlePhotoMealSaved" @cancel="showPhotoDialog = false" />
         </div>
       </DialogContent>
     </Dialog>
@@ -223,8 +168,6 @@ import PhotoMealForm from "@/components/health/PhotoMealForm.vue";
 import MealsList from "@/components/health/MealsList.vue";
 import MealsAnalysis from "@/components/health/MealsAnalysis.vue";
 import RecommendationsList from "@/components/health/RecommendationsList.vue";
-import RecommendationMetrics from "@/components/health/RecommendationMetrics.vue";
-import RecommendationTestPanel from "@/components/health/RecommendationTestPanel.vue";
 import { Button } from "@/components/ui/button";
 
 definePageMeta({
@@ -241,7 +184,6 @@ const {
   error,
   loadMeals,
   saveMealWithPhoto,
-  updateMeal,
   deleteMeal,
   loadRecommendations,
   getMealStats,
@@ -250,9 +192,6 @@ const {
 
 const { user, userId } = useUser();
 const { showToast } = useToast();
-
-// Configuration pour l'environnement de développement
-const isDevelopment = process.env.NODE_ENV === "development";
 
 // État réactif
 const showAddMealDialog = ref(false);
@@ -273,28 +212,75 @@ const tabs = [
 const handleMealSaved = async () => {
   showAddMealDialog.value = false;
   await loadMeals();
+
+  // Notification de succès avec émojis
+  showToast({
+    title: "✅ Repas ajouté avec succès",
+    description: "Votre repas a été enregistré dans votre journal alimentaire",
+    variant: "success",
+  });
+
+  // Attendre un peu puis recharger les recommandations pour voir s'il y en a des nouvelles
+  setTimeout(async () => {
+    const oldRecommendationsCount = recommendations.value.length;
+    await loadRecommendations();
+
+    if (recommendations.value.length > oldRecommendationsCount) {
+      const newCount = recommendations.value.length - oldRecommendationsCount;
+      showToast({
+        title: "💡 Nouvelles recommandations !",
+        description: `${newCount} nouvelle${newCount > 1 ? 's' : ''} recommandation${newCount > 1 ? 's' : ''} basée${newCount > 1 ? 's' : ''} sur votre dernier repas`,
+        variant: "default",
+      });
+    }
+  }, 1000);
 };
 
 const handlePhotoMealSaved = async (data: any) => {
   try {
     showToast({
-      title: "Repas photo enregistré avec succès",
+      title: "📸 Repas photo enregistré avec succès",
+      description: "Votre repas a été analysé et sauvegardé",
       variant: "success",
     });
 
     if (data.recommendations && data.recommendations.length > 0) {
+      // Notification principale pour les recommandations
       showToast({
-        title: `${data.recommendations.length} nouvelles recommandations générées`,
-        variant: "warning",
+        title: "🎯 Nouvelles recommandations !",
+        description: `${data.recommendations.length} recommandations personnalisées générées`,
+        variant: "default",
+      });
+
+      // Afficher les recommandations individuellement avec un délai
+      data.recommendations.slice(0, 2).forEach((rec: any, index: number) => {
+        setTimeout(() => {
+          const categoryEmojis: Record<string, string> = {
+            nutrition: "🥗",
+            portion: "⚖️",
+            variety: "🎨",
+            timing: "⏰",
+            hydration: "💧"
+          };
+          const emoji = categoryEmojis[rec.category] || "💡";
+
+          showToast({
+            title: `${emoji} ${rec.title}`,
+            description: rec.description.slice(0, 75) + (rec.description.length > 75 ? '...' : ''),
+            variant: rec.priority === 'high' ? 'destructive' : 'default',
+          });
+        }, (index + 1) * 2500);
       });
     }
 
     if (data.aiAnalysis) {
-      showToast({
-        title: "Analyse IA terminée",
-        description: "Votre repas a été analysé automatiquement",
-        variant: "success",
-      });
+      setTimeout(() => {
+        showToast({
+          title: "🧠 Analyse IA terminée",
+          description: "Votre repas a été analysé automatiquement avec intelligence artificielle",
+          variant: "success",
+        });
+      }, 1000);
     }
 
     showPhotoDialog.value = false;
@@ -303,6 +289,11 @@ const handlePhotoMealSaved = async (data: any) => {
     await Promise.all([loadMeals(), loadRecommendations()]);
   } catch (error) {
     console.error("Erreur lors du traitement post-sauvegarde:", error);
+    showToast({
+      title: "⚠️ Erreur de traitement",
+      description: "Une erreur s'est produite lors du traitement des données",
+      variant: "destructive",
+    });
   }
 };
 
@@ -394,30 +385,6 @@ const handleDeleteMeal = async (mealId: string) => {
   }
 };
 
-// Gestionnaires pour les recommandations
-const handleRecommendationMarkAsRead = async (recommendationId: string) => {
-  // La méthode dans le composable met déjà à jour l'état réactif
-  await loadRecommendations(); // Optionnel: recharger pour garantir la synchronisation
-};
-
-const handleRecommendationBookmark = async (recommendationId: string) => {
-  // La méthode dans le composable met déjà à jour l'état réactif
-  await loadRecommendations(); // Optionnel: recharger pour garantir la synchronisation
-};
-
-const handleRecommendationFeedback = async (
-  recommendationId: string,
-  feedback: string
-) => {
-  // La méthode dans le composable met déjà à jour l'état réactif
-  await loadRecommendations(); // Optionnel: recharger pour garantir la synchronisation
-};
-
-const handleMarkAllAsRead = async () => {
-  // Recharger les recommandations après avoir tout marqué comme lu
-  await loadRecommendations();
-};
-
 const handleGenerateRecommendations = async () => {
   try {
     if (meals.value.length === 0) {
@@ -453,8 +420,9 @@ const handleGenerateRecommendations = async () => {
         },
       ]; // Créer les recommandations via l'API
       const supabaseClient = useSupabaseClient();
-      const { data, error: insertError } = await supabaseClient
-        .from("meal_recommendations")
+      // Cast pour éviter les erreurs de type Supabase
+      const query = supabaseClient.from("meal_recommendations") as any;
+      const { data, error: insertError } = await query
         .insert(
           testRecommendations.map((rec) => ({
             user_id: userId.value,
@@ -473,30 +441,58 @@ const handleGenerateRecommendations = async () => {
 
       await loadRecommendations(); // Recharger les recommandations
 
+      // Notification pour les nouvelles recommandations
       showToast({
-        title: "Recommandations de démonstration générées",
-        description: `${testRecommendations.length} recommandations créées`,
+        title: "✨ Nouvelles recommandations disponibles !",
+        description: `${testRecommendations.length} recommandations de démarrage créées`,
         variant: "success",
       });
+
+      // Afficher chaque recommandation comme notification
+      testRecommendations.forEach((rec, index) => {
+        setTimeout(() => {
+          showToast({
+            title: `🎯 ${rec.title}`,
+            description: rec.description.slice(0, 80) + (rec.description.length > 80 ? '...' : ''),
+            variant: rec.priority === 'high' ? 'destructive' : 'default',
+          });
+        }, (index + 1) * 1500);
+      });
+
       return;
     }
 
-    // Si des repas existent, générer des recommandations personnalisées
-    const newRecommendations = getPersonalizedRecommendations();
+    // Si des repas existent, générer des recommandations personnalisées via l'IA
+    const newRecommendations = await getPersonalizedRecommendations();
 
     await loadRecommendations(); // Recharger les recommandations
 
+    // Notification principale
     showToast({
-      title: "Recommandations générées",
-      description: `${newRecommendations.length} nouvelles recommandations créées`,
+      title: "🧠 IA Recommandations générées",
+      description: `${newRecommendations.length} recommandations personnalisées créées avec l'IA`,
       variant: "success",
     });
+
+    // Afficher les nouvelles recommandations comme notifications individuelles
+    if (newRecommendations.length > 0) {
+      newRecommendations.slice(0, 3).forEach((rec: any, index: number) => {
+        setTimeout(() => {
+          const priorityEmoji = rec.priority === 'high' ? '🚨' : rec.priority === 'medium' ? '⚡' : '💡';
+          showToast({
+            title: `${priorityEmoji} ${rec.title}`,
+            description: rec.description.slice(0, 80) + (rec.description.length > 80 ? '...' : ''),
+            variant: rec.priority === 'high' ? 'destructive' : 'default',
+          });
+        }, (index + 1) * 2000);
+      });
+    }
   } catch (error) {
     console.error("Erreur lors de la génération des recommandations:", error);
     showToast({
-      title: "Erreur",
+      title: "❌ Erreur",
       description: "Impossible de générer les recommandations",
-      variant: "error",
+      variant: "destructive",
     });
   }
 };

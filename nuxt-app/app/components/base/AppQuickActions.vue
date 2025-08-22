@@ -1,33 +1,22 @@
 <template>
   <!-- Overlay pour fermer le menu -->
-  <div
-    v-if="isOpen"
-    class="fixed inset-0 bg-black/50 z-40"
-    @click="closeMenu"
-  />
+  <div v-if="isOpen" class="fixed inset-0 bg-black/50 z-40" @click="closeMenu" />
 
   <!-- Menu flottant -->
-  <div
-    v-if="isOpen"
-    class="fixed bottom-20 right-6 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4"
-    role="dialog"
-    aria-label="Menu d'actions rapides"
-    aria-modal="true"
-  >
+  <div v-if="isOpen" class="fixed bottom-20 right-6 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4"
+    role="dialog" aria-label="Menu d'actions rapides" aria-modal="true">
     <h3 class="text-sm font-semibold text-gray-900 mb-3">Actions rapides</h3>
 
     <div class="space-y-2">
       <template v-for="action in availableActions" :key="action.key">
         <button
           class="w-full flex items-center p-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-          :class="action.danger ? 'hover:bg-red-50 hover:text-red-700' : ''"
-          @click="executeAction(action)"
-        >
-          <Icon
-            :name="action.icon"
-            class="h-4 w-4 mr-3"
-            :class="action.danger ? 'text-red-500' : 'text-gray-500'"
-          />
+          :class="{
+            'hover:bg-red-50 hover:text-red-700': action.danger,
+            'bg-gradient-to-r from-primary-100 to-sky-200 border border-sky-500': action.featured,
+            'bg-gray-100 border border-gray-300': !action.featured,
+          }" @click="executeAction(action)">
+          <Icon :name="action.icon" class="h-4 w-4 mr-3" :class="action.danger ? 'text-red-500' : 'text-gray-500'" />
           <div>
             <div class="font-medium">{{ action.title }}</div>
             <div v-if="action.description" class="text-xs text-gray-500">
@@ -45,11 +34,8 @@
   <!-- Bouton flottant -->
   <button
     class="animate-pulse fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 z-30 flex items-center justify-center"
-    :class="isOpen ? 'rotate-45' : 'hover:scale-105'"
-    aria-label="Menu d'actions rapides"
-    :aria-expanded="isOpen"
-    @click="toggleMenu"
-  >
+    :class="isOpen ? 'rotate-45' : 'hover:scale-105'" aria-label="Menu d'actions rapides" :aria-expanded="isOpen"
+    @click="toggleMenu">
     <Icon name="lucide:zap" class="h-6 w-6" />
   </button>
 </template>
@@ -63,6 +49,7 @@ interface QuickAction {
   action: () => void;
   shortcut?: string;
   danger?: boolean;
+  featured?: boolean;
 }
 
 const isOpen = ref(false);
@@ -123,14 +110,16 @@ const availableActions = computed<QuickAction[]>(() => {
         description: "Analyser un repas par photo",
         icon: "lucide:camera",
         action: () => router.push("/patient/meals?mode=photo"),
+        featured: true
       },
       {
         key: "chat-ai",
         title: "Assistant IA",
         description: "Poser une question à l'IA",
         icon: "lucide:bot",
-        action: () => router.push("/patient/chat"),
+        action: () => router.push("/patient/chatbot"),
         shortcut: "Ctrl+I",
+        featured: true
       },
       {
         key: "dashboard",

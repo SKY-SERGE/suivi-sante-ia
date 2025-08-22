@@ -1,71 +1,24 @@
-import type { Database } from "@/types/database";
-
-// Types pour les repas
-export interface FoodItem {
-  name: string;
-  quantity?: string;
-  unit?: string;
-  calories?: number;
-  category?: string;
-  confidence?: number; // Pour l'analyse IA
-  nutritionalInfo?: {
-    calories?: number;
-    proteins?: number;
-    carbs?: number;
-    fats?: number;
-  };
-}
-
-export interface MealData {
-  id?: string;
-  user_id?: string;
-  type: string; // petit-dejeuner, dejeuner, diner, collation
-  datetime: string;
-  foods: FoodItem[];
-  notes?: string;
-  satisfaction?: number; // 1-5
-  hunger_level?: number; // 1-5
-  photo_url?: string;
-  ai_analysis?: string;
-  ai_identified_foods?: string[]; // Aliments identifiés par l'IA
-  ai_confidence?: number; // Confiance de l'IA (0-1)
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface MealRecommendation {
-  id?: string;
-  user_id?: string;
-  meal_id?: string;
-  category: string; // nutrition, variety, portion, timing
-  title: string;
-  description: string;
-  priority: "low" | "medium" | "high";
-  is_read: boolean;
-  is_bookmarked: boolean;
-  feedback?: "helpful" | "not_helpful" | "very_helpful";
-  created_at?: string;
-}
+import type { FoodItem, MealData, MealRecommendation } from "@/types/models";
 
 export const useMeals = () => {
   const { user, userId } = useUser();
   const supabaseClient = useSupabaseClient();
 
   // Intégrer le moteur de recommandations
-  const { generateRecommendationsForMeal, getPersonalizedTips } =
-    useRecommendationEngine();
-
-  // Intégrer Google AI pour la génération de texte
   const {
-    generateRecommendations: generateAIRecommendations,
-    generateMealExplanation,
-  } = useGoogleGenerativeAI();
+    recommendations: recommendationsList,
+    loadRecommendations,
+    generateRecommendationsForMeal,
+    getPersonalizedTips,
+  } = useRecommendationEngine();
 
   // État réactif
   const meals = ref<MealData[]>([]);
-  const recommendations = ref<MealRecommendation[]>([]);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+
+  const recommendations = computed(() => recommendationsList.value);
+
   // Charger les repas de l'utilisateur
   const loadMeals = async (limit?: number) => {
     if (!user.value) {
@@ -77,8 +30,9 @@ export const useMeals = () => {
     error.value = null;
 
     try {
-      let query = supabaseClient
-        .from("meal_records")
+      // Cast pour éviter les erreurs de type Supabase
+      let query = supabaseClient.from("meal_records") as any;
+      query = query
         .select(
           `
           id,
@@ -112,7 +66,7 @@ export const useMeals = () => {
       }
 
       // Mapper les données pour correspondre à notre interface
-      const mappedData = (data || []).map((meal) => ({
+      const mappedData = (data || []).map((meal: any) => ({
         ...meal,
         ai_analysis: meal.ai_analysis_text,
       }));
@@ -139,8 +93,9 @@ export const useMeals = () => {
     error.value = null;
 
     try {
-      const { data, error: saveError } = await supabaseClient
-        .from("meal_records")
+      // Cast pour éviter les erreurs de type Supabase
+      const query = supabaseClient.from("meal_records") as any;
+      const { data, error: saveError } = await query
         .insert([
           {
             user_id: userId.value,
@@ -166,7 +121,7 @@ export const useMeals = () => {
 
       // Mapper les données et ajouter le nouveau repas à la liste locale
       if (data) {
-        const mappedData = {
+        const mappedData: any = {
           ...data,
           ai_analysis: data.ai_analysis_text,
         };
@@ -311,9 +266,55 @@ export const useMeals = () => {
     }
   };
 
-  // Obtenir des conseils personnalisés pour l'utilisateur
-  const getPersonalizedRecommendations = () => {
-    return getPersonalizedTips(meals.value);
+  // Obtenir des conseils personnalisés pour l'utilisateur via l'API IA
+  const getPersonalizedRecommendations = async () => {
+    try {
+      if (!userId.value) {
+        throw new Error("Utilisateur non connecté");
+      }
+
+      // Appel à l'API pour générer des recommandations personnalisées avec l'IA
+      const response = (await $fetch("/api/ai/meal-recommendations", {
+        method: "POST",
+        body: {
+          userId: userId.value,
+          meals: meals.value,
+        },
+      })) as any;
+
+      if (response?.recommendations && response.recommendations.length > 0) {
+        // Sauvegarder les recommandations en base de données
+        const supabaseClient = useSupabaseClient();
+        const query = supabaseClient.from("meal_recommendations") as any;
+
+        const { data, error: insertError } = await query.insert(
+          response.recommendations.map((rec: any) => ({
+            user_id: userId.value,
+            category: rec.category,
+            title: rec.title,
+            description: rec.description,
+            priority: rec.priority,
+            is_read: false,
+            is_bookmarked: false,
+          }))
+        );
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        return response.recommendations;
+      }
+
+      return [];
+    } catch (error) {
+      console.error(
+        "Erreur lors de la génération des recommandations IA:",
+        error
+      );
+      // Fallback vers les recommandations basées sur des règles
+      return getPersonalizedTips(meals.value);
+    }
   };
 
   // Mettre à jour un repas existant
@@ -334,8 +335,9 @@ export const useMeals = () => {
         delete dbUpdates.ai_analysis;
       }
 
-      const { data, error: updateError } = await supabaseClient
-        .from("meal_records")
+      // Cast pour éviter les erreurs de type Supabase
+      const query = supabaseClient.from("meal_records") as any;
+      const { data, error: updateError } = await query
         .update({
           ...dbUpdates,
           updated_at: new Date().toISOString(),
@@ -352,7 +354,7 @@ export const useMeals = () => {
 
       // Mettre à jour la liste locale avec le mapping
       if (data) {
-        const mappedData = {
+        const mappedData: any = {
           ...data,
           ai_analysis: data.ai_analysis_text,
         };
@@ -382,8 +384,9 @@ export const useMeals = () => {
     error.value = null;
 
     try {
-      const { error: deleteError } = await supabaseClient
-        .from("meal_records")
+      // Cast pour éviter les erreurs de type Supabase
+      const query = supabaseClient.from("meal_records") as any;
+      const { error: deleteError } = await query
         .delete()
         .eq("id", mealId)
         .eq("user_id", userId.value);
@@ -404,145 +407,6 @@ export const useMeals = () => {
     }
   };
 
-  // Charger les recommandations
-  const loadRecommendations = async () => {
-    if (!user.value) {
-      error.value = "Utilisateur non authentifié";
-      return { data: [], error: "Utilisateur non authentifié" };
-    }
-
-    try {
-      const { data, error: fetchError } = await supabaseClient
-        .from("meal_recommendations")
-        .select("*")
-        .eq("user_id", userId.value)
-        .order("created_at", { ascending: false });
-
-      if (fetchError) {
-        error.value = fetchError.message;
-        return { data: [], error: fetchError };
-      }
-
-      recommendations.value = data || [];
-      return { data: data || [], error: null };
-    } catch (err: any) {
-      error.value = err.message;
-      return { data: [], error: err };
-    }
-  };
-
-  // Marquer une recommandation comme lue
-  const markRecommendationAsRead = async (recommendationId: string) => {
-    if (!user.value) return { error: "Utilisateur non authentifié" };
-
-    try {
-      const { data, error: updateError } = await supabaseClient
-        .from("meal_recommendations")
-        .update({ is_read: true })
-        .eq("id", recommendationId)
-        .eq("user_id", userId.value)
-        .select()
-        .single();
-
-      if (updateError) {
-        error.value = updateError.message;
-        return { error: updateError };
-      }
-
-      // Mettre à jour localement
-      if (data) {
-        const index = recommendations.value.findIndex(
-          (r) => r.id === recommendationId
-        );
-        if (index !== -1) {
-          recommendations.value[index] = data;
-        }
-      }
-
-      return { data, error: null };
-    } catch (err: any) {
-      error.value = err.message;
-      return { error: err };
-    }
-  };
-
-  // Ajouter/retirer un signet sur une recommandation
-  const toggleRecommendationBookmark = async (recommendationId: string) => {
-    if (!user.value) return { error: "Utilisateur non authentifié" };
-
-    try {
-      const recommendation = recommendations.value.find(
-        (r) => r.id === recommendationId
-      );
-      if (!recommendation) return { error: "Recommandation non trouvée" };
-
-      const { data, error: updateError } = await supabaseClient
-        .from("meal_recommendations")
-        .update({ is_bookmarked: !recommendation.is_bookmarked })
-        .eq("id", recommendationId)
-        .eq("user_id", userId.value)
-        .select()
-        .single();
-
-      if (updateError) {
-        error.value = updateError.message;
-        return { error: updateError };
-      }
-
-      // Mettre à jour localement
-      if (data) {
-        const index = recommendations.value.findIndex(
-          (r) => r.id === recommendationId
-        );
-        if (index !== -1) {
-          recommendations.value[index] = data;
-        }
-      }
-
-      return { data, error: null };
-    } catch (err: any) {
-      error.value = err.message;
-      return { error: err };
-    }
-  };
-
-  // Donner un feedback sur une recommandation
-  const giveFeedbackOnRecommendation = async (
-    recommendationId: string,
-    feedback: "helpful" | "not_helpful" | "very_helpful"
-  ) => {
-    if (!user.value) return { error: "Utilisateur non authentifié" };
-
-    try {
-      const { data, error: updateError } = await supabaseClient
-        .from("meal_recommendations")
-        .update({ feedback })
-        .eq("id", recommendationId)
-        .eq("user_id", userId.value)
-        .select()
-        .single();
-
-      if (updateError) {
-        error.value = updateError.message;
-        return { error: updateError };
-      }
-
-      // Mettre à jour localement
-      if (data) {
-        const index = recommendations.value.findIndex(
-          (r) => r.id === recommendationId
-        );
-        if (index !== -1) {
-          recommendations.value[index] = data;
-        }
-      }
-
-      return { data, error: null };
-    } catch (err: any) {
-      error.value = err.message;
-      return { error: err };
-    }
-  };
   // Analyser les repas avec IA
   const analyzePhotoMeal = async (
     photoBlob: Blob
@@ -615,19 +479,31 @@ export const useMeals = () => {
       // Utiliser les derniers repas pour le contexte
       const recentMeals = meals.value.slice(0, 10);
 
-      // Appeler le service Google AI
-      const aiResponse = await generateAIRecommendations({
-        meals: recentMeals,
-        currentMeal,
-        userPreferences,
+      // Appeler notre nouvelle API de recommandations
+      const aiResponse = await $fetch<{
+        success: boolean;
+        recommendations: any[];
+        explanation?: string;
+        confidence?: number;
+        error?: string;
+        fallback?: boolean;
+      }>("/api/ai/meal-recommendations", {
+        method: "POST",
+        body: {
+          meals: recentMeals,
+          currentMeal,
+          userPreferences,
+        },
       });
 
-      if (!aiResponse) {
-        console.warn("Pas de réponse de Google AI, utilisation du fallback");
+      if (!aiResponse.success || !aiResponse.recommendations?.length) {
+        console.warn(
+          "Pas de recommandations de l'API AI, utilisation du fallback"
+        );
         return {
           recommendations: [],
           saved: false,
-          error: "Échec de génération IA",
+          error: aiResponse.error || "Échec de génération IA",
         };
       }
 
@@ -637,8 +513,9 @@ export const useMeals = () => {
       for (const rec of aiResponse.recommendations) {
         if (!user.value) continue;
 
-        const { data, error: saveError } = await supabaseClient
-          .from("meal_recommendations")
+        // Cast pour éviter les erreurs de type Supabase
+        const query = supabaseClient.from("meal_recommendations") as any;
+        const { data, error: saveError } = await query
           .insert({
             user_id: userId.value,
             meal_id: currentMeal.id,
@@ -676,6 +553,52 @@ export const useMeals = () => {
     }
   };
 
+  // Générer une explication pour un repas avec l'API
+  const generateMealExplanation = async (
+    meal: MealData,
+    analysis?: any
+  ): Promise<string> => {
+    try {
+      const response = await $fetch<{
+        success: boolean;
+        explanation: string;
+        error?: string;
+        fallback?: boolean;
+      }>("/api/ai/meal-explanation", {
+        method: "POST",
+        body: {
+          meal,
+          analysis,
+        },
+      });
+
+      if (!response.success && response.fallback) {
+        console.warn("Utilisation de l'explication de fallback");
+      }
+
+      return response.explanation || "Repas analysé avec succès.";
+    } catch (error) {
+      console.error("Erreur explication IA:", error);
+
+      // Fallback simple en cas d'erreur
+      const foodNames =
+        meal.foods?.map((f) => f.name).join(", ") || "aliments variés";
+      const mealTypeText = getMealTypeText(meal.type);
+      return `Votre ${mealTypeText} composé de ${foodNames} constitue un bon choix alimentaire.`;
+    }
+  };
+
+  // Fonction utilitaire pour obtenir le texte du type de repas
+  const getMealTypeText = (type: string): string => {
+    const types: Record<string, string> = {
+      "petit-dejeuner": "petit-déjeuner",
+      dejeuner: "déjeuner",
+      diner: "dîner",
+      collation: "collation",
+    };
+    return types[type] || type;
+  };
+
   // Calculer les statistiques
   const getMealStats = computed(() => {
     const today = new Date().toDateString();
@@ -710,7 +633,50 @@ export const useMeals = () => {
     meals: readonly(meals),
     recommendations: readonly(recommendations),
     isLoading: readonly(isLoading),
-    error: readonly(error), // Méthodes pour les repas
+    error: readonly(error),
+
+    // Fonction pour notifier les nouvelles recommandations
+    notifyNewRecommendations: (recommendations: any[]) => {
+      if (typeof window !== "undefined") {
+        const { showToast } = useToast();
+
+        if (recommendations.length > 0) {
+          showToast({
+            title: "🎯 Nouvelles recommandations !",
+            description: `${recommendations.length} recommandation${
+              recommendations.length > 1 ? "s" : ""
+            } personnalisée${recommendations.length > 1 ? "s" : ""} générée${
+              recommendations.length > 1 ? "s" : ""
+            }`,
+            variant: "default",
+          });
+
+          // Afficher les premières recommandations individuellement
+          recommendations.slice(0, 2).forEach((rec: any, index: number) => {
+            setTimeout(() => {
+              const categoryEmojis: Record<string, string> = {
+                nutrition: "🥗",
+                portion: "⚖️",
+                variety: "🎨",
+                timing: "⏰",
+                hydration: "💧",
+              };
+              const emoji = categoryEmojis[rec.category] || "💡";
+
+              showToast({
+                title: `${emoji} ${rec.title}`,
+                description:
+                  rec.description.slice(0, 70) +
+                  (rec.description.length > 70 ? "..." : ""),
+                variant: rec.priority === "high" ? "destructive" : "default",
+              });
+            }, (index + 1) * 2000);
+          });
+        }
+      }
+    },
+
+    // Méthodes pour les repas
     loadMeals,
     saveMeal,
     saveMealWithRecommendations,
@@ -721,9 +687,6 @@ export const useMeals = () => {
 
     // Méthodes pour les recommandations
     loadRecommendations,
-    markRecommendationAsRead,
-    toggleRecommendationBookmark,
-    giveFeedbackOnRecommendation,
 
     // Statistiques
     getMealStats,
@@ -731,7 +694,8 @@ export const useMeals = () => {
     // Personnalisation
     getPersonalizedRecommendations,
 
-    // Génération de recommandations avec AI
+    // Génération de recommandations et explications avec API
     generateRecommendationsWithAI,
+    generateMealExplanation,
   };
 };
